@@ -91,16 +91,16 @@ function peso(float $v): string
 function leaveTypeBadge(string $type): string
 {
     return match ($type) {
-        'Sick Leave'                => 'danger',
-        'Vacation Leave'            => 'primary',
+        'Vacation Leave'            => 'success',
+        'Sick Leave'                => 'info text-dark',
         'Mandatory/Forced Leave'    => 'secondary',
-        'Maternity Leave'           => 'pink',
-        'Paternity Leave'           => 'info',
-        'Special Privilege Leave'   => 'purple',
-        'Solo Parent Leave'         => 'warning',
+        'Maternity Leave'           => 'danger',
+        'Paternity Leave'           => 'primary',
+        'Special Privilege Leave'   => 'primary',
+        'Solo Parent Leave'         => 'warning text-dark',
         'Study Leave'               => 'dark',
-        'Calamity Leave'            => 'orange',
-        default                     => 'secondary',
+        'Calamity Leave'            => 'danger',
+        default                     => 'primary',
     };
 }
 
