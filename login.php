@@ -47,7 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="col-sm-8 col-md-5 col-lg-4">
 
     <div class="text-center mb-4">
-        <div class="login-logo mx-auto mb-3"><i class="bi bi-file-earmark-medical fs-1 text-white"></i></div>
+        <img src="https://scontent.fmnl13-2.fna.fbcdn.net/v/t39.30808-6/239470877_366781958265636_3035717695931803955_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeH65r2kvwylISgzQDbdHykxqy208_2sh0SrLbTz_ayHRGh8rkZJ4gsiUhRy8dEAVrNNYkJrTb-lYCYrs-HtLJBd&_nc_ohc=mnUECLTMsqIQ7kNvwHaKmP1&_nc_oc=Adk5dH951M3QbhLCILVP5JzqUXB_Y3HllpVaQppI3LB_xxeYkJSiMXWgjLpdZkNabsI&_nc_zt=23&_nc_ht=scontent.fmnl13-2.fna&_nc_gid=B-UCbRP8_2CNNW799nsAmA&oh=00_AfvVkIUxWUDJ50CZ1yI660nRZfkmF779ROMdV5mICCW7Nw&oe=699849A9"
+             alt="PHO Palawan Logo" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
         <h5 class="fw-bold text-dark">Provincial Health Office</h5>
         <p class="text-muted small mb-0">Province of Palawan</p>
         <p class="text-muted small">Leave Management &amp; Tracking System</p>
