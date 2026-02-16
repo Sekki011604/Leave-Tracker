@@ -41,7 +41,7 @@ $_page = basename($_SERVER['PHP_SELF']);
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle me-1"></i><?= h($_SESSION['admin_name'] ?? 'Admin') ?>
+                        <i class="bi bi-person-circle me-1"></i>Admin Office – PHO Palawan
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
