@@ -76,6 +76,7 @@ if (isset($_GET['disapprove'])) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="assets/css/style.css" rel="stylesheet">
+<link href="assets/css/custom.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <?php include 'navbar.php'; ?>
@@ -98,7 +99,7 @@ if (isset($_GET['disapprove'])) {
         <div class="card border-0 shadow-sm border-start border-4 border-primary">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div><div class="text-muted small text-uppercase fw-semibold">Active Employees</div><div class="fs-3 fw-bold"><?=$totalEmp?></div></div>
-                <span class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people"></i></span>
+                <span class="stat-icon bg-primary text-white"><i class="bi bi-people"></i></span>
             </div>
         </div>
     </div>
@@ -106,7 +107,7 @@ if (isset($_GET['disapprove'])) {
         <div class="card border-0 shadow-sm border-start border-4 border-warning">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div><div class="text-muted small text-uppercase fw-semibold">On Leave Today</div><div class="fs-3 fw-bold"><?=$onLeaveCt?></div></div>
-                <span class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-calendar-x"></i></span>
+                <span class="stat-icon bg-warning text-white"><i class="bi bi-calendar-x"></i></span>
             </div>
         </div>
     </div>
@@ -114,7 +115,7 @@ if (isset($_GET['disapprove'])) {
         <div class="card border-0 shadow-sm border-start border-4 border-info">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div><div class="text-muted small text-uppercase fw-semibold">Pending Applications</div><div class="fs-3 fw-bold"><?=$pendingCt?></div></div>
-                <span class="stat-icon bg-info bg-opacity-10 text-info"><i class="bi bi-hourglass-split"></i></span>
+                <span class="stat-icon bg-info text-white"><i class="bi bi-hourglass-split"></i></span>
             </div>
         </div>
     </div>
@@ -122,7 +123,7 @@ if (isset($_GET['disapprove'])) {
         <div class="card border-0 shadow-sm border-start border-4 border-success">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div><div class="text-muted small text-uppercase fw-semibold">Total Applications</div><div class="fs-3 fw-bold"><?=$totalApps?></div></div>
-                <span class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-journal-text"></i></span>
+                <span class="stat-icon bg-success text-white"><i class="bi bi-journal-text"></i></span>
             </div>
         </div>
     </div>

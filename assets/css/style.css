@@ -6,14 +6,14 @@
  * Uses Bootstrap 5. This file provides overrides & helpers.
  */
 
-/* ── CSS Variables (Government-friendly palette) ─────────── */
+/* ── CSS Variables (PHO Palawan Green & Gold) ────────────── */
 :root {
-    --pho-primary:   #1a5276;
-    --pho-secondary: #2980b9;
-    --pho-light:     #d4e6f1;
-    --pho-dark:      #0e2f44;
-    --pho-accent:    #f39c12;
-    --pho-bg:        #f0f4f7;
+    --pho-primary:   #228B22;
+    --pho-secondary: #2EA62E;
+    --pho-light:     #D5F0DE;
+    --pho-dark:      #003366;
+    --pho-accent:    #DAA520;
+    --pho-bg:        #F0F8F4;
 }
 
 body {

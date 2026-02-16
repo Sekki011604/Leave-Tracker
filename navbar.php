@@ -7,7 +7,8 @@ $_page = basename($_SERVER['PHP_SELF']);
 <nav class="navbar navbar-expand-lg navbar-dark bg-pho shadow-sm sticky-top">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="index.php">
-            <i class="bi bi-file-earmark-medical"></i>
+            <img src="https://scontent.fmnl13-2.fna.fbcdn.net/v/t39.30808-6/239470877_366781958265636_3035717695931803955_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeH65r2kvwylISgzQDbdHykxqy208_2sh0SrLbTz_ayHRGh8rkZJ4gsiUhRy8dEAVrNNYkJrTb-lYCYrs-HtLJBd&_nc_ohc=mnUECLTMsqIQ7kNvwHaKmP1&_nc_oc=Adk5dH951M3QbhLCILVP5JzqUXB_Y3HllpVaQppI3LB_xxeYkJSiMXWgjLpdZkNabsI&_nc_zt=23&_nc_ht=scontent.fmnl13-2.fna&_nc_gid=B-UCbRP8_2CNNW799nsAmA&oh=00_AfvVkIUxWUDJ50CZ1yI660nRZfkmF779ROMdV5mICCW7Nw&oe=699849A9"
+                 alt="PHO Palawan Logo" class="d-inline-block align-text-top rounded-circle" style="height: 40px; width: auto;">
             <span class="fw-bold d-none d-sm-inline">PHO-Palawan Leave Tracker</span>
             <span class="fw-bold d-sm-none">PHO Leave</span>
         </a>

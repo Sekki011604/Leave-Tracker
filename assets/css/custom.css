@@ -1,0 +1,259 @@
+/**
+ * ============================================================
+ * PHO-Palawan Leave Tracker — Green & Gold Brand Theme
+ * Provincial Health Office of Palawan
+ * ============================================================
+ * Link this AFTER Bootstrap and style.css to override defaults.
+ * All colors are controlled via CSS variables for easy tuning.
+ *
+ * Bootstrap 5 compiles many utility/component colors as hard
+ * hex values, NOT referencing --bs-primary at runtime.  We must
+ * therefore use explicit color values + !important to guarantee
+ * every blue remnant is replaced.
+ */
+
+/* ── Brand Palette ─────────────────────────────────────────── */
+:root {
+    /* ▸ Primary Green (Forest Green — government branding) */
+    --pho-primary:     #228B22;
+    --pho-primary-rgb: 34, 139, 34;
+    --pho-primary-dk:  #1B6E1B;
+    --pho-primary-lt:  #2EA62E;
+
+    /* ▸ Accent Gold (Goldenrod — logo star) */
+    --pho-accent:      #DAA520;
+    --pho-accent-rgb:  218, 165, 32;
+    --pho-accent-dk:   #B8860B;
+    --pho-accent-lt:   #F0C040;
+
+    /* ▸ Dark Navy (navbar / dark headings) */
+    --pho-dark:        #003366;
+    --pho-dark-rgb:    0, 51, 102;
+
+    /* ▸ Supporting tones */
+    --pho-secondary:   #2EA62E;
+    --pho-light:       #D5F0DE;
+    --pho-bg:          #F0F8F4;
+
+    /* ▸ Force Bootstrap's own primary variables green */
+    --bs-primary:          #228B22 !important;
+    --bs-primary-rgb:      34, 139, 34 !important;
+    --bs-link-color:       #228B22;
+    --bs-link-hover-color: #1B6E1B;
+}
+
+/* ── Global ────────────────────────────────────────────────── */
+body {
+    background: var(--pho-bg);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAVBAR  —  PHO Green
+   ══════════════════════════════════════════════════════════════ */
+.bg-pho,
+.navbar,
+.navbar-dark,
+.navbar.bg-pho {
+    background: linear-gradient(135deg, #2E8B57 0%, #256E46 100%) !important;
+}
+.navbar .nav-link,
+.navbar .navbar-brand,
+.navbar-dark .nav-link,
+.navbar-dark .navbar-brand {
+    color: rgba(255, 255, 255, .92) !important;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link:focus,
+.navbar-dark .nav-link:hover,
+.navbar-dark .nav-link:focus {
+    color: #F0C040 !important;          /* gold highlight */
+}
+.navbar .nav-link.active,
+.navbar-dark .nav-link.active {
+    background: rgba(218, 165, 32, .22) !important;
+    color: #F0C040 !important;
+    border-radius: .375rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   .bg-primary  —  Force green (except opacity tints)
+   ══════════════════════════════════════════════════════════════ */
+.bg-primary:not(.bg-opacity-10):not(.bg-opacity-25):not(.bg-opacity-50):not(.bg-opacity-75) {
+    background-color: #228B22 !important;
+}
+/* Let bg-primary + bg-opacity-* use Bootstrap's RGBA approach with green */
+.bg-primary.bg-opacity-10  { background-color: rgba(34, 139, 34, .1)  !important; }
+.bg-primary.bg-opacity-25  { background-color: rgba(34, 139, 34, .25) !important; }
+.bg-primary.bg-opacity-50  { background-color: rgba(34, 139, 34, .5)  !important; }
+.bg-primary.bg-opacity-75  { background-color: rgba(34, 139, 34, .75) !important; }
+
+.text-primary {
+    color: #228B22 !important;
+}
+.text-bg-primary {
+    background-color: #228B22 !important;
+    color: #fff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUTTONS  —  .btn-primary / .btn-outline-primary
+   ══════════════════════════════════════════════════════════════ */
+.btn-primary {
+    background-color: #228B22 !important;
+    border-color:     #228B22 !important;
+    color: #fff !important;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #1B6E1B !important;
+    border-color:     #1B6E1B !important;
+    color: #fff !important;
+}
+.btn-primary:active,
+.btn-primary.active,
+.btn-primary:first-child:active {
+    background-color: #166016 !important;
+    border-color:     #166016 !important;
+}
+.btn-primary:focus-visible {
+    box-shadow: 0 0 0 .25rem rgba(34, 139, 34, .5) !important;
+}
+
+.btn-outline-primary {
+    color:        #228B22 !important;
+    border-color: #228B22 !important;
+    background:   transparent !important;
+}
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: #228B22 !important;
+    border-color:     #228B22 !important;
+    color: #fff !important;
+}
+.btn-outline-primary:active {
+    background-color: #1B6E1B !important;
+    border-color:     #1B6E1B !important;
+    color: #fff !important;
+}
+
+/* Gold accent button (use class .btn-accent) */
+.btn-accent {
+    background: #DAA520 !important;
+    border-color: #DAA520 !important;
+    color: #fff;
+    font-weight: 600;
+}
+.btn-accent:hover {
+    background: #B8860B !important;
+    border-color: #B8860B !important;
+    color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CARDS  —  Gold top-border + green/navy headers
+   ══════════════════════════════════════════════════════════════ */
+.card {
+    border-top: 3px solid #DAA520;
+}
+.card-header {
+    color: #fff;
+}
+.card-header.bg-primary,
+.card-header[class*="bg-primary"] {
+    background: #228B22 !important;
+    border-bottom: 2px solid #DAA520;
+    color: #fff !important;
+}
+.card-header.bg-dark,
+.card-header[class*="bg-dark"] {
+    background: #2E8B57 !important;
+    border-bottom: 2px solid #DAA520;
+    color: #fff !important;
+}
+.card-header.bg-white {
+    color: #212529 !important;       /* keep dark text on white headers */
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABLES
+   ══════════════════════════════════════════════════════════════ */
+.table-dark th,
+.table-dark thead th {
+    background: #228B22 !important;
+    border-color: #1B6E1B !important;
+    color: #fff !important;
+}
+.table thead th {
+    color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORM FOCUS
+   ══════════════════════════════════════════════════════════════ */
+.form-control:focus,
+.form-select:focus {
+    border-color: #228B22 !important;
+    box-shadow: 0 0 0 .25rem rgba(34, 139, 34, .25) !important;
+}
+.form-check-input:checked {
+    background-color: #228B22 !important;
+    border-color: #228B22 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BADGES  —  Override .bg-primary badges
+   ══════════════════════════════════════════════════════════════ */
+.badge.bg-primary {
+    background-color: #228B22 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD STAT ICONS
+   ══════════════════════════════════════════════════════════════ */
+.stat-icon {
+    color: #fff !important;
+}
+.stat-icon.bg-primary   { background-color: #228B22 !important; }
+.stat-icon.text-primary { color: #fff !important; }
+.stat-icon.text-warning { color: #fff !important; }
+.stat-icon.text-info    { color: #fff !important; }
+.stat-icon.text-success { color: #fff !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   AVATAR / LOGIN / STAT ICONS
+   ══════════════════════════════════════════════════════════════ */
+.avatar-circle {
+    background: linear-gradient(135deg, #228B22, #2EA62E) !important;
+}
+.login-logo {
+    background: #228B22 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LINKS & PAGINATION
+   ══════════════════════════════════════════════════════════════ */
+a:not(.btn):not(.nav-link):not(.dropdown-item):not(.badge) {
+    color: #228B22;
+}
+a:not(.btn):not(.nav-link):not(.dropdown-item):not(.badge):hover {
+    color: #1B6E1B;
+}
+
+.page-item.active .page-link {
+    background-color: #228B22 !important;
+    border-color: #228B22 !important;
+}
+.page-link {
+    color: #228B22;
+}
+.page-link:hover {
+    color: #1B6E1B;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CUSTOM HELPERS
+   ══════════════════════════════════════════════════════════════ */
+.text-pho       { color: #228B22 !important; }
+.text-accent    { color: #DAA520 !important; }
+.bg-pho-light   { background: #D5F0DE !important; }
+.border-accent  { border-color: #DAA520 !important; }
