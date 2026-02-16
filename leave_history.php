@@ -23,7 +23,17 @@ if($fType!=='')  { $sql.=" AND la.leave_type=?";   $p[]=$fType;     $t.='s'; }
 if($fStatus!=='') { $sql.=" AND la.status=?";       $p[]=$fStatus;   $t.='s'; }
 if($fYear!=='')  { $sql.=" AND YEAR(la.date_start)=?"; $p[]=(int)$fYear; $t.='i'; }
 $sql .= " ORDER BY la.date_start DESC";
-$st=$conn->prepare($sql); if($t!=='') $st->bind_param($t,...$p); $st->execute(); $logs=$st->get_result();
+$st = $conn->prepare($sql);
+if ($t !== '') {
+    // Build a reference array for bind_param (works on all PHP versions)
+    $bindArgs = [$t];
+    for ($i = 0; $i < count($p); $i++) {
+        $bindArgs[] = &$p[$i];
+    }
+    call_user_func_array([$st, 'bind_param'], $bindArgs);
+}
+$st->execute();
+$logs = $st->get_result();
 
 $empList=$conn->query("SELECT id,employee_name FROM employees ORDER BY employee_name");
 $years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications ORDER BY y DESC");
@@ -50,7 +60,7 @@ $years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications 
 
 <!-- Filters -->
 <div class="card shadow-sm border-0 mb-3"><div class="card-body py-2">
-<form method="GET" class="row g-2 align-items-end">
+<form method="GET" action="leave_history.php" class="row g-2 align-items-end">
     <div class="col-md-3">
         <label class="form-label small mb-1">Employee</label>
         <select name="employee" class="form-select form-select-sm"><option value="">All</option>
@@ -78,7 +88,7 @@ $years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications 
         </select>
     </div>
     <div class="col-md-3">
-        <button class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <button type="submit" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-funnel me-1"></i>Filter</button>
         <a href="leave_history.php" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-circle"></i></a>
     </div>
 </form></div></div>
