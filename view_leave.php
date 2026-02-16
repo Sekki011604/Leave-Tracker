@@ -77,7 +77,7 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div><h4 class="fw-bold mb-0"><i class="bi bi-file-earmark-medical me-2"></i>Leave Application #<?=$id?></h4>
-    <small class="text-muted">Civil Service Form No. 6</small></div>
+    </div>
     <div class="d-flex gap-1">
         <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
         <a href="leave_history.php" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
@@ -105,14 +105,14 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 </div>
 
 <!-- §6-A  Leave Type -->
-<h6 class="fw-bold text-primary mb-2"><i class="bi bi-tag me-1"></i>6.A — Type of Leave</h6>
+<h6 class="fw-bold text-primary mb-2"><i class="bi bi-tag me-1"></i>Leave Type</h6>
 <div class="mb-3 ms-3">
     <span class="badge bg-<?=leaveTypeBadge($la['leave_type'])?> fs-6"><?=h($la['leave_type'])?></span>
     <?php if($la['other_leave_type']): ?><span class="ms-2 text-muted">(<?=h($la['other_leave_type'])?>)</span><?php endif; ?>
 </div>
 
 <!-- §6-B  Details -->
-<h6 class="fw-bold text-primary mb-2"><i class="bi bi-card-text me-1"></i>6.B — Details of Leave</h6>
+<h6 class="fw-bold text-primary mb-2"><i class="bi bi-card-text me-1"></i>Specific Details</h6>
 <div class="mb-3 ms-3 small">
     <?php if($la['vacation_detail']): ?>
         <p class="mb-1"><strong>Location:</strong> <?=h($la['vacation_detail'])?> <?=$la['vacation_location']?'— '.h($la['vacation_location']):''?></p>
@@ -132,7 +132,7 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 </div>
 
 <!-- §6-C  Dates -->
-<h6 class="fw-bold text-primary mb-2"><i class="bi bi-calendar-range me-1"></i>6.C — Inclusive Dates</h6>
+<h6 class="fw-bold text-primary mb-2"><i class="bi bi-calendar-range me-1"></i>Duration</h6>
 <div class="mb-3 ms-3">
     <div class="row g-3">
         <div class="col-auto"><div class="border rounded p-2 small"><span class="text-muted d-block">Start</span><strong><?=date('F d, Y',strtotime($la['date_start']))?></strong></div></div>
@@ -142,7 +142,7 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 </div>
 
 <!-- §6-D  Commutation -->
-<h6 class="fw-bold text-primary mb-2"><i class="bi bi-cash-stack me-1"></i>6.D — Commutation</h6>
+<h6 class="fw-bold text-primary mb-2"><i class="bi bi-cash-stack me-1"></i>Commutation Request</h6>
 <div class="mb-3 ms-3"><span class="badge bg-<?=$la['commutation']==='Requested'?'info':'secondary'?>"><?=h($la['commutation'])?></span></div>
 
 <!-- Credit Impact -->
