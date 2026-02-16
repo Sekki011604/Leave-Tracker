@@ -1,0 +1,149 @@
+/**
+ * ============================================================
+ * PHO-Palawan Leave Management System — Global Styles
+ * Provincial Health Office of Palawan — Digital Leave Tracker
+ * ============================================================
+ * Uses Bootstrap 5. This file provides overrides & helpers.
+ */
+
+/* ── CSS Variables (Government-friendly palette) ─────────── */
+:root {
+    --pho-primary:   #1a5276;
+    --pho-secondary: #2980b9;
+    --pho-light:     #d4e6f1;
+    --pho-dark:      #0e2f44;
+    --pho-accent:    #f39c12;
+    --pho-bg:        #f0f4f7;
+}
+
+body {
+    background: var(--pho-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ── Navbar ────────────────────────────────────────────────── */
+.bg-pho {
+    background: linear-gradient(135deg, var(--pho-primary) 0%, var(--pho-secondary) 100%) !important;
+}
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.nav-link.active {
+    background: rgba(255,255,255,.15) !important;
+    border-radius: .375rem;
+}
+
+/* ── Login Page ────────────────────────────────────────────── */
+.login-logo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--pho-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+}
+
+/* ── Dashboard Stat Icons ──────────────────────────────────── */
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* ── Avatar Circle (Ledger, Profile cards) ─────────────────── */
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #fff;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--pho-primary), var(--pho-secondary));
+}
+
+/* ── Tables ────────────────────────────────────────────────── */
+.table-dark th {
+    background: var(--pho-primary) !important;
+    border-color: var(--pho-dark) !important;
+}
+.table th {
+    font-weight: 600;
+    font-size: .82rem;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    vertical-align: middle;
+}
+.table td {
+    vertical-align: middle;
+}
+
+/* ── Cards ─────────────────────────────────────────────────── */
+.card {
+    border-radius: .5rem;
+}
+.card-header {
+    font-weight: 600;
+}
+
+/* ── Buttons & Form Focus Colors ───────────────────────────── */
+.btn-pho {
+    background: var(--pho-primary);
+    border-color: var(--pho-primary);
+    color: #fff;
+}
+.btn-pho:hover {
+    background: var(--pho-dark);
+    border-color: var(--pho-dark);
+    color: #fff;
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--pho-secondary);
+    box-shadow: 0 0 0 .25rem rgba(41,128,185,.25);
+}
+
+/* ── Badges ────────────────────────────────────────────────── */
+.badge { font-weight: 500; }
+
+/* ── Ledger Table (Section 7A) ─────────────────────────────── */
+.ledger-table th {
+    font-size: .75rem;
+}
+.ledger-table td {
+    font-size: .85rem;
+}
+
+/* ── Utility ───────────────────────────────────────────────── */
+.fs-7  { font-size: .85rem !important; }
+.fs-8  { font-size: .75rem !important; }
+.mw-500 { max-width: 500px; }
+.text-pho { color: var(--pho-primary) !important; }
+.bg-pho-light { background: var(--pho-light) !important; }
+
+/* ── Print Styles ──────────────────────────────────────────── */
+@media print {
+    body {
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .navbar, .btn, .card-footer,
+    .no-print { display: none !important; }
+    .card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    .container { max-width: 100% !important; }
+}
