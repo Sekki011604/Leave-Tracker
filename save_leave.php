@@ -66,6 +66,7 @@ $st = $conn->prepare("SELECT vacation_leave_balance, sick_leave_balance FROM emp
 $st->bind_param('i', $empId);
 $st->execute();
 $emp = $st->get_result()->fetch_assoc();
+$st->close();
 
 if (!$emp) {
     setFlash('danger', 'Employee not found or inactive.');
@@ -119,6 +120,7 @@ try {
         $upd = $conn->prepare("SELECT 1");
     }
     $upd->execute();
+    $upd->close();
 
     // 2. Insert leave application
     $ins = $conn->prepare(
