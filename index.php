@@ -141,7 +141,7 @@ if (isset($_GET['disapprove'])) {
     <div class="card-body p-0">
     <?php if($onLeaveCt): ?>
         <div class="table-responsive"><table class="table table-sm table-hover mb-0">
-        <thead class="table-light"><tr><th>Employee</th><th>Dept</th><th>Type</th><th>Period</th></tr></thead>
+        <thead class="table-dark"><tr><th>Employee</th><th>Dept</th><th>Type</th><th>Period</th></tr></thead>
         <tbody>
         <?php $onLeave->data_seek(0); while($r=$onLeave->fetch_assoc()): ?>
         <tr>
@@ -167,7 +167,7 @@ if (isset($_GET['disapprove'])) {
     </div>
     <div class="card-body p-0">
         <div class="table-responsive"><table class="table table-sm table-hover mb-0">
-        <thead class="table-light"><tr><th>Employee</th><th class="text-end">VL Balance</th><th class="text-end">SL Balance</th></tr></thead>
+        <thead class="table-dark"><tr><th>Employee</th><th class="text-end">VL Balance</th><th class="text-end">SL Balance</th></tr></thead>
         <tbody>
         <?php
         // Merge both lists into one set keyed by name

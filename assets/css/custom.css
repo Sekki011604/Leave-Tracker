@@ -183,8 +183,10 @@ body {
     border-color: #1B6E1B !important;
     color: #fff !important;
 }
-.table thead th {
-    color: #fff;
+/* Only force white text on dark-themed headers, not table-light */
+.table-light th,
+.table-light thead th {
+    color: #212529 !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
