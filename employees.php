@@ -51,7 +51,17 @@ if (isset($_GET['edit'])) {
 /* ── Add / Update POST ─────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action   = $_POST['action'] ?? 'add';
-    $name     = trim($_POST['employee_name'] ?? '');
+    $firstName  = trim($_POST['first_name']  ?? '');
+    $middleName = trim($_POST['middle_name'] ?? '');
+    $lastName   = trim($_POST['last_name']   ?? '');
+
+    // Concatenate into government format: "Last Name, First Name Middle Name"
+    if ($middleName !== '') {
+        $name = $lastName . ', ' . $firstName . ' ' . $middleName;
+    } else {
+        $name = $lastName . ', ' . $firstName;
+    }
+
     $pos      = trim($_POST['position'] ?? '');
     $salary   = floatval($_POST['salary'] ?? 0);
     $deptId   = (int)($_POST['department_id'] ?? 0);
@@ -60,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dateH    = $_POST['date_hired'] ?? null;
     if ($dateH === '') $dateH = null;
 
-    if ($name === '') {
-        $error = 'Employee name is required.';
+    if ($firstName === '' || $lastName === '') {
+        $error = 'First Name and Last Name are required.';
     } else {
         if ($action === 'update') {
             $uid = (int)$_POST['id'];
@@ -78,9 +88,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($error && $action === 'update') {
         $editMode = true;
-        $editData = ['id' => $_POST['id'], 'employee_name' => $name, 'position' => $pos, 'salary' => $salary,
+        $editData = ['id' => $_POST['id'], 'employee_name' => $name,
+                     '_first' => $firstName, '_middle' => $middleName, '_last' => $lastName,
+                     'position' => $pos, 'salary' => $salary,
                      'department_id' => $deptId, 'vacation_leave_balance' => $vlBal, 'sick_leave_balance' => $slBal, 'date_hired' => $dateH];
     }
+}
+
+/*
+ * Helper: parse "Last, First M." back into parts (for edit mode).
+ * Returns [first, middle, last].
+ */
+function parseEmployeeName(?string $full): array {
+    if (!$full) return ['', '', ''];
+    // Expected: "LastName, FirstName M." or "LastName, FirstName"
+    if (strpos($full, ',') !== false) {
+        [$last, $rest] = array_map('trim', explode(',', $full, 2));
+        $parts = preg_split('/\s+/', $rest);
+        $first = $parts[0] ?? '';
+        $mid   = isset($parts[1]) ? rtrim($parts[1], '.') : '';
+        return [$first, $mid, $last];
+    }
+    // Fallback: space-separated
+    $parts = preg_split('/\s+/', $full);
+    if (count($parts) >= 3) return [$parts[0], $parts[1], $parts[2]];
+    if (count($parts) === 2) return [$parts[0], '', $parts[1]];
+    return [$full, '', ''];
 }
 
 /* ── Fetch employees ───────────────────────────────────────── */
@@ -183,11 +216,35 @@ $emps = $st->get_result();
 <div class="modal-body">
     <?php if($error): ?><div class="alert alert-danger py-2 small"><?=h($error)?></div><?php endif; ?>
 
+    <?php
+        // Resolve name parts for the form
+        if ($editMode && isset($editData['_first'])) {
+            // Came from a failed POST — parts already available
+            $_fn = $editData['_first']; $_mn = $editData['_middle']; $_ln = $editData['_last'];
+        } elseif ($editMode) {
+            // Loaded from DB — parse the stored full name
+            [$_fn, $_mn, $_ln] = parseEmployeeName($editData['employee_name'] ?? '');
+        } else {
+            $_fn = $_POST['first_name']  ?? '';
+            $_mn = $_POST['middle_name'] ?? '';
+            $_ln = $_POST['last_name']   ?? '';
+        }
+    ?>
     <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label small fw-semibold">Employee Name <span class="text-danger">*</span></label>
-            <input type="text" name="employee_name" class="form-control" required
-                   value="<?=h($editMode?$editData['employee_name']:($_POST['employee_name']??''))?>">
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">First Name <span class="text-danger">*</span></label>
+            <input type="text" name="first_name" class="form-control" required
+                   value="<?=h($_fn)?>" placeholder="Juan">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Middle Name / Initial <span class="text-muted fw-normal">(Optional)</span></label>
+            <input type="text" name="middle_name" class="form-control"
+                   value="<?=h($_mn)?>" placeholder="Andres">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Last Name <span class="text-danger">*</span></label>
+            <input type="text" name="last_name" class="form-control" required
+                   value="<?=h($_ln)?>" placeholder="Dela Cruz">
         </div>
         <div class="col-md-6">
             <label class="form-label small fw-semibold">Position / Designation</label>
