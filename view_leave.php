@@ -20,39 +20,24 @@ if (isset($_GET['action'])) {
         $conn->query("UPDATE leave_applications SET status='Approved' WHERE id=$id");
         setFlash('success', "Leave application #$id approved.");
     } elseif ($act === 'disapprove') {
-        // Restore credits
-        $la = $conn->query("SELECT employee_id,charge_to,days_deducted FROM leave_applications WHERE id=$id AND status='Pending'")->fetch_assoc();
-        if ($la && $la['days_deducted'] > 0 && $la['charge_to'] !== 'Leave Without Pay') {
-            $col = $la['charge_to'] === 'Sick Leave' ? 'sick_leave_balance' : 'vacation_leave_balance';
-            $conn->query("UPDATE employees SET $col=$col+{$la['days_deducted']} WHERE id={$la['employee_id']}");
-        }
-        $conn->query("UPDATE leave_applications SET status='Disapproved', days_deducted=0 WHERE id=$id");
-        setFlash('warning', "Leave application #$id disapproved. Credits restored.");
+        $conn->query("UPDATE leave_applications SET status='Disapproved' WHERE id=$id");
+        setFlash('warning', "Leave application #$id disapproved.");
     }
     header("Location: view_leave.php?id=$id"); exit;
 }
 
 /* ── Delete leave record ──────────────────────────────────── */
 if (isset($_GET['delete'])) {
-    $la = $conn->query("SELECT employee_id,charge_to,days_deducted,status FROM leave_applications WHERE id=$id")->fetch_assoc();
-    if ($la) {
-        // Restore credits if was deducted and not already disapproved
-        if ($la['days_deducted'] > 0 && $la['status'] !== 'Disapproved' && $la['charge_to'] !== 'Leave Without Pay') {
-            $col = $la['charge_to'] === 'Sick Leave' ? 'sick_leave_balance' : 'vacation_leave_balance';
-            $conn->query("UPDATE employees SET $col=$col+{$la['days_deducted']} WHERE id={$la['employee_id']}");
-        }
-        $conn->query("DELETE FROM leave_applications WHERE id=$id");
-        setFlash('success', 'Leave record deleted. Credits restored.');
-        header('Location: leave_history.php'); exit;
-    }
+    $conn->query("DELETE FROM leave_applications WHERE id=$id");
+    setFlash('success', 'Leave record deleted.');
+    header('Location: leave_history.php'); exit;
 }
 
 /* ── Fetch the record ──────────────────────────────────────── */
 $st = $conn->prepare(
-    "SELECT la.*, e.employee_name, e.position, e.salary, d.name AS dept
+    "SELECT la.*, e.employee_name, e.position, e.department
      FROM leave_applications la
      JOIN employees e ON e.id=la.employee_id
-     LEFT JOIN departments d ON d.id=e.department_id
      WHERE la.id=?"
 );
 $st->bind_param('i', $id);
@@ -94,8 +79,7 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
         <table class="table table-sm table-borderless mb-0 small">
             <tr><td class="text-muted" style="width:120px">Employee</td><td class="fw-bold"><?=h($la['employee_name'])?></td></tr>
             <tr><td class="text-muted">Position</td><td><?=h($la['position']??'—')?></td></tr>
-            <tr><td class="text-muted">Department</td><td><?=h($la['dept']??'—')?></td></tr>
-            <tr><td class="text-muted">Salary</td><td><?=peso($la['salary'])?></td></tr>
+            <tr><td class="text-muted">Department</td><td><?=h($la['department']??'\u2014')?></td></tr>
         </table>
     </div>
     <div class="col-md-6 text-md-end">
@@ -146,14 +130,11 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 <h6 class="fw-bold text-primary mb-2"><i class="bi bi-cash-stack me-1"></i>Commutation Request</h6>
 <div class="mb-3 ms-3"><span class="badge bg-<?=$la['commutation']==='Requested'?'info':'secondary'?>"><?=h($la['commutation'])?></span></div>
 
-<!-- Credit Impact -->
-<h6 class="fw-bold text-dark mb-2"><i class="bi bi-database me-1"></i>Credit Impact</h6>
+<!-- Credit Info -->
+<h6 class="fw-bold text-dark mb-2"><i class="bi bi-journal-text me-1"></i>Recording Info</h6>
 <div class="mb-3 ms-3">
     <table class="table table-sm table-bordered small" style="max-width:500px">
-        <tr><td class="text-muted">Charged To</td><td class="fw-bold"><?=h($la['charge_to'])?></td></tr>
-        <tr><td class="text-muted">Days Deducted</td><td class="fw-bold"><?=number_format($la['days_deducted'],3)?></td></tr>
-        <tr class="table-light"><td class="text-muted">VL Balance</td><td><?=number_format($la['balance_before_vl']??0,3)?> → <strong class="text-primary"><?=number_format($la['balance_after_vl']??0,3)?></strong></td></tr>
-        <tr class="table-light"><td class="text-muted">SL Balance</td><td><?=number_format($la['balance_before_sl']??0,3)?> → <strong class="text-danger"><?=number_format($la['balance_after_sl']??0,3)?></strong></td></tr>
+        <tr><td class="text-muted">Working Days</td><td class="fw-bold"><?=number_format($la['working_days'],1)?></td></tr>
     </table>
 </div>
 
@@ -169,11 +150,11 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
     <?php if($la['status']==='Pending'): ?>
         <a href="view_leave.php?id=<?=$id?>&action=approve" class="btn btn-success" onclick="return confirm('Approve this leave?')">
             <i class="bi bi-check-circle me-1"></i>Approve</a>
-        <a href="view_leave.php?id=<?=$id?>&action=disapprove" class="btn btn-danger" onclick="return confirm('Disapprove and restore credits?')">
+        <a href="view_leave.php?id=<?=$id?>&action=disapprove" class="btn btn-danger" onclick="return confirm('Disapprove this leave?')">
             <i class="bi bi-x-circle me-1"></i>Disapprove</a>
     <?php endif; ?>
     <a href="employee_ledger.php?id=<?=$la['employee_id']?>" class="btn btn-outline-info"><i class="bi bi-journal-bookmark me-1"></i>View Ledger</a>
-    <a href="view_leave.php?id=<?=$id?>&delete=1" class="btn btn-outline-danger ms-auto" onclick="return confirm('Delete this record and restore credits?')">
+    <a href="view_leave.php?id=<?=$id?>&delete=1" class="btn btn-outline-danger ms-auto" onclick="return confirm('Delete this record permanently?')">
         <i class="bi bi-trash me-1"></i>Delete</a>
 </div>
 </div>

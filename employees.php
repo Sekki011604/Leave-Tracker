@@ -4,14 +4,11 @@
  * PHO-Palawan Leave Management System — Employee Management
  * ============================================================
  * Full CRUD: Add, Edit, Toggle Active/Inactive, Delete.
- * Fields: Name, Position, Salary, Department, VL/SL Balances.
+ * Fields: Name, Position, Department (text).
  */
 require_once 'auth.php';
 require_once 'db_connect.php';
 require_once 'helpers.php';
-
-// Departments for dropdown
-$departments = $conn->query("SELECT id, name FROM departments ORDER BY name");
 
 $error    = '';
 $editMode = false;
@@ -63,25 +60,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $pos      = trim($_POST['position'] ?? '');
-    $salary   = floatval($_POST['salary'] ?? 0);
-    $deptId   = (int)($_POST['department_id'] ?? 0);
-    $vlBal    = floatval($_POST['vacation_leave_balance'] ?? 15);
-    $slBal    = floatval($_POST['sick_leave_balance'] ?? 15);
-    $dateH    = $_POST['date_hired'] ?? null;
-    if ($dateH === '') $dateH = null;
+    $dept     = trim($_POST['department'] ?? '');
 
     if ($firstName === '' || $lastName === '') {
         $error = 'First Name and Last Name are required.';
+    } elseif ($pos === '') {
+        $error = 'Position is required.';
+    } elseif ($dept === '') {
+        $error = 'Department is required.';
     } else {
         if ($action === 'update') {
             $uid = (int)$_POST['id'];
-            $st = $conn->prepare("UPDATE employees SET employee_name=?, position=?, salary=?, department_id=?, vacation_leave_balance=?, sick_leave_balance=?, date_hired=? WHERE id=?");
-            $st->bind_param('ssdiidsi', $name, $pos, $salary, $deptId, $vlBal, $slBal, $dateH, $uid);
+            $st = $conn->prepare("UPDATE employees SET employee_name=?, position=?, department=? WHERE id=?");
+            $st->bind_param('sssi', $name, $pos, $dept, $uid);
             if ($st->execute()) { setFlash('success','Employee updated.'); header('Location: employees.php'); exit; }
             $error = 'Update failed.';
         } else {
-            $st = $conn->prepare("INSERT INTO employees (employee_name, position, salary, department_id, vacation_leave_balance, sick_leave_balance, date_hired) VALUES (?,?,?,?,?,?,?)");
-            $st->bind_param('ssdiids', $name, $pos, $salary, $deptId, $vlBal, $slBal, $dateH);
+            $st = $conn->prepare("INSERT INTO employees (employee_name, position, department) VALUES (?,?,?)");
+            $st->bind_param('sss', $name, $pos, $dept);
             if ($st->execute()) { setFlash('success','Employee added.'); header('Location: employees.php'); exit; }
             $error = 'Insert failed: ' . $conn->error;
         }
@@ -90,8 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $editMode = true;
         $editData = ['id' => $_POST['id'], 'employee_name' => $name,
                      '_first' => $firstName, '_middle' => $middleName, '_last' => $lastName,
-                     'position' => $pos, 'salary' => $salary,
-                     'department_id' => $deptId, 'vacation_leave_balance' => $vlBal, 'sick_leave_balance' => $slBal, 'date_hired' => $dateH];
+                     'position' => $pos, 'department' => $dept];
     }
 }
 
@@ -119,7 +114,7 @@ function parseEmployeeName(?string $full): array {
 /* ── Fetch employees ───────────────────────────────────────── */
 $search = trim($_GET['q'] ?? '');
 $fStatus = $_GET['status'] ?? '';
-$sql = "SELECT e.*, d.name AS dept FROM employees e LEFT JOIN departments d ON d.id=e.department_id WHERE 1=1";
+$sql = "SELECT * FROM employees e WHERE 1=1";
 $p = []; $t = '';
 if ($search !== '') { $like="%$search%"; $sql .= " AND (e.employee_name LIKE ? OR e.position LIKE ?)"; $p[]=$like; $p[]=$like; $t .= 'ss'; }
 if ($fStatus !== '') { $sql .= " AND e.status=?"; $p[]=$fStatus; $t .= 's'; }
@@ -168,25 +163,18 @@ $emps = $st->get_result();
 <table class="table table-hover table-striped table-sm mb-0">
 <thead class="table-dark"><tr>
     <th>#</th><th>Employee Name</th><th>Position</th><th>Department</th>
-    <th class="text-end">Salary</th>
-    <th class="text-center">VL Bal.</th><th class="text-center">SL Bal.</th>
     <th class="text-center">Status</th><th class="text-center" style="width:170px">Actions</th>
 </tr></thead>
 <tbody>
 <?php if ($emps->num_rows===0): ?>
-    <tr><td colspan="9" class="text-center py-4 text-muted">No employees found.</td></tr>
-<?php else: $n=1; while($r=$emps->fetch_assoc()):
-    $vlC = $r['vacation_leave_balance']<=3 ? ($r['vacation_leave_balance']<=0?'text-danger fw-bold':'text-warning fw-bold') : '';
-    $slC = $r['sick_leave_balance']<=3 ? ($r['sick_leave_balance']<=0?'text-danger fw-bold':'text-warning fw-bold') : '';
-?>
+    <tr><td colspan="6" class="text-center py-4 text-muted">No employees found.</td></tr>
+<?php else: $n=1; while($r=$emps->fetch_assoc()): ?>
 <tr>
     <td class="text-muted"><?=$n++?></td>
     <td class="fw-semibold"><?=h($r['employee_name'])?></td>
     <td class="small"><?=h($r['position']??'—')?></td>
-    <td class="small"><?=h($r['dept']??'—')?></td>
-    <td class="text-end small"><?=peso($r['salary'])?></td>
-    <td class="text-center <?=$vlC?>"><?=number_format($r['vacation_leave_balance'],3)?></td>
-    <td class="text-center <?=$slC?>"><?=number_format($r['sick_leave_balance'],3)?></td>
+    <td class="small"><?=h($r['department']??'—')?></td>
+
     <td class="text-center"><span class="badge bg-<?=$r['status']==='Active'?'success':'secondary'?>"><?=h($r['status'])?></span></td>
     <td class="text-center text-nowrap">
         <a href="employee_ledger.php?id=<?=$r['id']?>" class="btn btn-sm btn-outline-info" title="Ledger"><i class="bi bi-journal-bookmark"></i></a>
@@ -204,7 +192,7 @@ $emps = $st->get_result();
 </div>
 
 <!-- ═══ Add / Edit Modal ═══ -->
-<div class="modal fade" id="empModal" tabindex="-1"><div class="modal-dialog modal-lg">
+<div class="modal fade" id="empModal" tabindex="-1"><div class="modal-dialog">
 <div class="modal-content"><form method="POST" action="employees.php">
 <input type="hidden" name="action" value="<?=$editMode?'update':'add'?>">
 <?php if($editMode): ?><input type="hidden" name="id" value="<?=$editData['id']?>"><?php endif; ?>
@@ -237,7 +225,7 @@ $emps = $st->get_result();
                    value="<?=h($_fn)?>" placeholder="Juan">
         </div>
         <div class="col-md-4">
-            <label class="form-label small fw-semibold">Middle Name / Initial <span class="text-muted fw-normal">(Optional)</span></label>
+            <label class="form-label small fw-semibold">Middle Name</label>
             <input type="text" name="middle_name" class="form-control"
                    value="<?=h($_mn)?>" placeholder="Andres">
         </div>
@@ -247,43 +235,14 @@ $emps = $st->get_result();
                    value="<?=h($_ln)?>" placeholder="Dela Cruz">
         </div>
         <div class="col-md-6">
-            <label class="form-label small fw-semibold">Position / Designation</label>
-            <input type="text" name="position" class="form-control"
-                   value="<?=h($editMode?($editData['position']??''):($_POST['position']??''))?>">
-        </div>
-        <div class="col-md-4">
-            <label class="form-label small fw-semibold">Department</label>
-            <select name="department_id" class="form-select">
-                <option value="0">— None —</option>
-                <?php $departments->data_seek(0); while($d=$departments->fetch_assoc()): ?>
-                <option value="<?=$d['id']?>" <?=($editMode?$editData['department_id']:($_POST['department_id']??0))==$d['id']?'selected':''?>>
-                    <?=h($d['name'])?>
-                </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label small fw-semibold">Monthly Salary</label>
-            <div class="input-group"><span class="input-group-text">₱</span>
-            <input type="number" name="salary" class="form-control" step="0.01" min="0"
-                   value="<?=h($editMode?$editData['salary']:($_POST['salary']??'0'))?>"></div>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label small fw-semibold">Date Hired</label>
-            <input type="date" name="date_hired" class="form-control"
-                   value="<?=h($editMode?($editData['date_hired']??''):($_POST['date_hired']??''))?>">
+            <label class="form-label small fw-semibold">Position / Designation <span class="text-danger">*</span></label>
+            <input type="text" name="position" class="form-control" required
+                   value="<?=h($editMode?($editData['position']??''):($_POST['position']??''))?>" placeholder="e.g. Nurse II">
         </div>
         <div class="col-md-6">
-            <label class="form-label small fw-semibold">Vacation Leave Balance</label>
-            <input type="number" name="vacation_leave_balance" class="form-control" step="0.125" min="0"
-                   value="<?=h($editMode?$editData['vacation_leave_balance']:($_POST['vacation_leave_balance']??'15'))?>">
-            <div class="form-text">Default: 15.000 days</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label small fw-semibold">Sick Leave Balance</label>
-            <input type="number" name="sick_leave_balance" class="form-control" step="0.125" min="0"
-                   value="<?=h($editMode?$editData['sick_leave_balance']:($_POST['sick_leave_balance']??'15'))?>">
-            <div class="form-text">Default: 15.000 days</div>
+            <label class="form-label small fw-semibold">Department <span class="text-danger">*</span></label>
+            <input type="text" name="department" class="form-control" required
+                   value="<?=h($editMode?($editData['department']??''):($_POST['department']??''))?>" placeholder="e.g. Rural Health Unit">
         </div>
     </div>
 </div>

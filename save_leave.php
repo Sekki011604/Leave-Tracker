@@ -2,17 +2,15 @@
 /**
  * ============================================================
  * PHO-Palawan Leave Management System
- * save_leave.php — Process leave application & deduct credits
+ * save_leave.php — Record leave application (Simple Logbook)
  * ============================================================
  *
  * Logic:
  *   1. Validate inputs.
- *   2. Verify server-side business-day calculation.
- *   3. Snapshot current balances (before).
- *   4. Deduct from the correct balance column (VL / SL / LWOP).
- *   5. Snapshot balances (after).
- *   6. Insert leave_applications record with all Form 6 fields.
- *   7. Redirect with flash message.
+ *   2. Insert leave_applications record with all Form 6 fields.
+ *   3. Redirect with flash message.
+ *
+ * No credit checking or balance deduction — purely a logbook.
  */
 require_once 'auth.php';
 require_once 'db_connect.php';
@@ -38,7 +36,6 @@ $dateStart    =         $_POST['date_start']       ?? '';
 $dateEnd      =         $_POST['date_end']         ?? '';
 $workingDays  = floatval($_POST['working_days']    ?? 0);
 $commutation  =         $_POST['commutation']      ?? 'Not Requested';
-$chargeTo     =         $_POST['charge_to']        ?? 'Vacation Leave';
 $remarks      = trim(   $_POST['remarks']          ?? '');
 $recordedBy   =         $_SESSION['admin_name']    ?? 'Admin';
 
@@ -56,13 +53,8 @@ if (!empty($errors)) {
     exit;
 }
 
-/* ── Verify business days server-side ──────────────────────── */
-$serverDays = countBusinessDays($dateStart, $dateEnd);
-// We allow manual override (half-days, etc.) but warn if wildly off
-// No hard block — admin is trusted.
-
-/* ── Fetch employee balances ───────────────────────────────── */
-$st = $conn->prepare("SELECT vacation_leave_balance, sick_leave_balance FROM employees WHERE id=? AND status='Active'");
+/* ── Verify employee exists & is active ────────────────────── */
+$st = $conn->prepare("SELECT id FROM employees WHERE id=? AND status='Active'");
 $st->bind_param('i', $empId);
 $st->execute();
 $emp = $st->get_result()->fetch_assoc();
@@ -74,55 +66,8 @@ if (!$emp) {
     exit;
 }
 
-$vlBefore = (float) $emp['vacation_leave_balance'];
-$slBefore = (float) $emp['sick_leave_balance'];
-$daysDeducted = $workingDays;
-
-/* ── Credit deduction ──────────────────────────────────────── */
-if ($chargeTo === 'Leave Without Pay') {
-    // No deduction
-    $daysDeducted = 0;
-    $vlAfter = $vlBefore;
-    $slAfter = $slBefore;
-} elseif ($chargeTo === 'Sick Leave') {
-    if ($slBefore < $workingDays) {
-        setFlash('danger', 'Insufficient Sick Leave credits. Current SL balance: ' . number_format($slBefore, 3)
-                 . ' days. Required: ' . $workingDays . ' days.');
-        header('Location: encode_leave.php');
-        exit;
-    }
-    $vlAfter = $vlBefore;
-    $slAfter = $slBefore - $workingDays;
-} else {
-    // Vacation Leave (default for most types)
-    if ($vlBefore < $workingDays) {
-        setFlash('danger', 'Insufficient Vacation Leave credits. Current VL balance: ' . number_format($vlBefore, 3)
-                 . ' days. Required: ' . $workingDays . ' days.');
-        header('Location: encode_leave.php');
-        exit;
-    }
-    $vlAfter = $vlBefore - $workingDays;
-    $slAfter = $slBefore;
-}
-
-/* ── Transaction: deduct + insert ──────────────────────────── */
-$conn->begin_transaction();
+/* ── Insert leave application ──────────────────────────────── */
 try {
-    // 1. Update employee balance
-    if ($chargeTo === 'Sick Leave') {
-        $upd = $conn->prepare("UPDATE employees SET sick_leave_balance = ? WHERE id = ?");
-        $upd->bind_param('di', $slAfter, $empId);
-    } elseif ($chargeTo === 'Vacation Leave') {
-        $upd = $conn->prepare("UPDATE employees SET vacation_leave_balance = ? WHERE id = ?");
-        $upd->bind_param('di', $vlAfter, $empId);
-    } else {
-        // LWOP — no update needed, but create a dummy stmt for consistency
-        $upd = $conn->prepare("SELECT 1");
-    }
-    $upd->execute();
-    $upd->close();
-
-    // 2. Insert leave application
     $ins = $conn->prepare(
         "INSERT INTO leave_applications
             (employee_id, leave_type, other_leave_type,
@@ -130,47 +75,32 @@ try {
              sick_detail, sick_illness,
              study_detail, other_detail,
              date_start, date_end, working_days,
-             commutation, charge_to, days_deducted,
-             balance_before_vl, balance_before_sl,
-             balance_after_vl, balance_after_sl,
+             commutation,
              status, recorded_by, remarks)
-         VALUES (?,?,?, ?,?, ?,?, ?,?, ?,?,?, ?,?,?, ?,?, ?,?, 'Pending',?,?)"
+         VALUES (?,?,?, ?,?, ?,?, ?,?, ?,?,?, ?, 'Pending',?,?)"
     );
 
     $ins->bind_param(
-        'issssssssssdssdddddss',
+        'issssssssssdsss',
         $empId, $leaveType, $otherType,
         $vacDetail, $vacLocation,
         $sickDetail, $sickIllness,
         $studyDetail, $otherDetail,
         $dateStart, $dateEnd, $workingDays,
-        $commutation, $chargeTo, $daysDeducted,
-        $vlBefore, $slBefore,
-        $vlAfter, $slAfter,
+        $commutation,
         $recordedBy, $remarks
     );
     $ins->execute();
+    $ins->close();
 
-    $conn->commit();
-
-    // Build success message
-    $msg = 'Leave application saved. ';
-    if ($chargeTo === 'Leave Without Pay') {
-        $msg .= 'Charged as Leave Without Pay (no deduction).';
-    } else {
-        $msg .= $workingDays . ' day(s) deducted from ' . $chargeTo . '. ';
-        if ($chargeTo === 'Sick Leave') {
-            $msg .= 'SL Balance: ' . number_format($slBefore, 3) . ' → ' . number_format($slAfter, 3);
-        } else {
-            $msg .= 'VL Balance: ' . number_format($vlBefore, 3) . ' → ' . number_format($vlAfter, 3);
-        }
-    }
+    $msg = 'Leave application saved — '
+         . $workingDays . ' day(s) of ' . $leaveType
+         . ' (' . date('M d', strtotime($dateStart)) . ' – ' . date('M d, Y', strtotime($dateEnd)) . ').';
     setFlash('success', $msg);
     header('Location: index.php');
     exit;
 
 } catch (Exception $ex) {
-    $conn->rollback();
     setFlash('danger', 'Database error: ' . $ex->getMessage());
     header('Location: encode_leave.php');
     exit;

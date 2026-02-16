@@ -13,10 +13,9 @@ $fType   = $_GET['type'] ?? '';
 $fStatus = $_GET['status'] ?? '';
 $fYear   = $_GET['year'] ?? '';
 
-$sql = "SELECT la.*, e.employee_name, d.name AS dept
+$sql = "SELECT la.*, e.employee_name, e.department
         FROM leave_applications la
-        JOIN employees e ON e.id=la.employee_id
-        LEFT JOIN departments d ON d.id=e.department_id WHERE 1=1";
+        JOIN employees e ON e.id=la.employee_id WHERE 1=1";
 $p=[]; $t='';
 if($fEmp!=='')   { $sql.=" AND la.employee_id=?"; $p[]=(int)$fEmp; $t.='i'; }
 if($fType!=='')  { $sql.=" AND la.leave_type=?";   $p[]=$fType;     $t.='s'; }
@@ -98,21 +97,20 @@ $years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications 
 <table class="table table-sm table-hover table-striped mb-0">
 <thead class="table-dark"><tr>
     <th>#</th><th>Employee</th><th>Dept</th><th>Leave Type</th><th>Period</th>
-    <th class="text-center">Days</th><th>Charged To</th><th class="text-center">Status</th>
+    <th class="text-center">Days</th><th class="text-center">Status</th>
     <th>Commutation</th><th class="text-center">View</th>
 </tr></thead>
 <tbody>
 <?php if($logs->num_rows===0): ?>
-    <tr><td colspan="10" class="text-center py-4 text-muted">No records found.</td></tr>
+    <tr><td colspan="9" class="text-center py-4 text-muted">No records found.</td></tr>
 <?php else: $n=1; while($r=$logs->fetch_assoc()): ?>
 <tr>
     <td class="text-muted"><?=$n++?></td>
     <td class="fw-semibold"><?=h($r['employee_name'])?></td>
-    <td class="small"><?=h($r['dept']??'')?></td>
+    <td class="small"><?=h($r['department']??'')?></td>
     <td><span class="badge bg-<?=leaveTypeBadge($r['leave_type'])?>"><?=h($r['leave_type'])?></span></td>
     <td class="small text-nowrap"><?=date('M d',strtotime($r['date_start']))?> – <?=date('M d, Y',strtotime($r['date_end']))?></td>
     <td class="text-center"><span class="badge bg-dark"><?=$r['working_days']?></span></td>
-    <td class="small"><?=h($r['charge_to'])?></td>
     <td class="text-center"><span class="badge bg-<?=statusBadge($r['status'])?>"><?=h($r['status'])?></span></td>
     <td class="small"><?=h($r['commutation'])?></td>
     <td class="text-center"><a href="view_leave.php?id=<?=$r['id']?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a></td>

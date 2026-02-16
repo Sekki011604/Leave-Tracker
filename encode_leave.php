@@ -17,9 +17,8 @@ require_once 'helpers.php';
 
 // Active employees for dropdown
 $employees = $conn->query(
-    "SELECT e.id, e.employee_name, e.position, e.vacation_leave_balance, e.sick_leave_balance, d.name AS dept
+    "SELECT e.id, e.employee_name, e.position, e.department
      FROM employees e
-     LEFT JOIN departments d ON d.id=e.department_id
      WHERE e.status='Active'
      ORDER BY e.employee_name"
 );
@@ -62,19 +61,15 @@ $employees = $conn->query(
                 <?php while($e=$employees->fetch_assoc()): ?>
                 <option value="<?=$e['id']?>"
                         data-pos="<?=h($e['position']??'')?>"
-                        data-dept="<?=h($e['dept']??'')?>"
-                        data-vl="<?=$e['vacation_leave_balance']?>"
-                        data-sl="<?=$e['sick_leave_balance']?>"><?=h($e['employee_name'])?></option>
+                        data-dept="<?=h($e['department']??'')?>"><?=h($e['employee_name'])?></option>
                 <?php endwhile; ?>
             </select>
         </div>
         <!-- Info readout -->
         <div id="empInfo" class="d-none">
             <div class="row g-2">
-                <div class="col-sm-4"><div class="border rounded p-2 small"><span class="text-muted d-block">Position</span><strong id="infoPos">—</strong></div></div>
-                <div class="col-sm-4"><div class="border rounded p-2 small"><span class="text-muted d-block">Department</span><strong id="infoDept">—</strong></div></div>
-                <div class="col-sm-2"><div class="border rounded p-2 small text-center"><span class="text-muted d-block">VL Bal.</span><strong id="infoVL" class="text-primary">—</strong></div></div>
-                <div class="col-sm-2"><div class="border rounded p-2 small text-center"><span class="text-muted d-block">SL Bal.</span><strong id="infoSL" class="text-danger">—</strong></div></div>
+                <div class="col-sm-6"><div class="border rounded p-2 small"><span class="text-muted d-block">Position</span><strong id="infoPos">—</strong></div></div>
+                <div class="col-sm-6"><div class="border rounded p-2 small"><span class="text-muted d-block">Department</span><strong id="infoDept">—</strong></div></div>
             </div>
         </div>
     </div>
@@ -168,7 +163,6 @@ $employees = $conn->query(
         <div id="dayCalc" class="alert alert-info py-2 small d-none">
             <i class="bi bi-calculator me-1"></i>
             <strong>Working Days:</strong> <span id="calcDays" class="fw-bold fs-5">0</span>
-            <span id="calcWarn" class="text-danger d-none ms-2 fw-bold">(Exceeds available credits!)</span>
         </div>
         <div class="mb-0">
             <label class="form-label small fw-semibold">Working Days <span class="text-muted fw-normal">(auto-calculated, editable)</span></label>
@@ -179,23 +173,14 @@ $employees = $conn->query(
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     CARD 3 — Credit Deduction
+     CARD 3 — Recording Details
      ═══════════════════════════════════════════════════════════ -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-dark text-white py-2">
-        <strong><i class="bi bi-database me-1"></i>Credit Deduction</strong>
+        <strong><i class="bi bi-journal-text me-1"></i>Recording Details</strong>
     </div>
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label small fw-semibold">Charge Leave To <span class="text-danger">*</span></label>
-                <select name="charge_to" id="selCharge" class="form-select" required>
-                    <option value="Vacation Leave">Vacation Leave Balance</option>
-                    <option value="Sick Leave">Sick Leave Balance</option>
-                    <option value="Leave Without Pay">Leave Without Pay (no deduction)</option>
-                </select>
-                <div class="form-text">Auto-set based on leave type. Override for LWOP or special cases.</div>
-            </div>
             <div class="col-md-6">
                 <label class="form-label small fw-semibold">Commutation</label>
                 <div class="mt-1">
@@ -233,12 +218,10 @@ $employees = $conn->query(
 document.addEventListener('DOMContentLoaded', () => {
     const selEmp   = document.getElementById('selEmp');
     const selType  = document.getElementById('selType');
-    const selCharge= document.getElementById('selCharge');
     const dateS    = document.getElementById('dateStart');
     const dateE    = document.getElementById('dateEnd');
     const dayCalc  = document.getElementById('dayCalc');
     const calcDays = document.getElementById('calcDays');
-    const calcWarn = document.getElementById('calcWarn');
     const wdInput  = document.getElementById('workingDays');
     const empInfo  = document.getElementById('empInfo');
 
@@ -252,23 +235,16 @@ document.addEventListener('DOMContentLoaded', () => {
         none:     document.getElementById('blkNoDetail'),
     };
 
-    let empVL = 0, empSL = 0;
-
     /* ── Employee select ─────────────────────────────────── */
     selEmp.addEventListener('change', () => {
         const opt = selEmp.selectedOptions[0];
         if (selEmp.value) {
-            empVL = parseFloat(opt.dataset.vl);
-            empSL = parseFloat(opt.dataset.sl);
             document.getElementById('infoPos').textContent  = opt.dataset.pos || '—';
             document.getElementById('infoDept').textContent = opt.dataset.dept || '—';
-            document.getElementById('infoVL').textContent   = empVL.toFixed(3);
-            document.getElementById('infoSL').textContent   = empSL.toFixed(3);
             empInfo.classList.remove('d-none');
         } else {
             empInfo.classList.add('d-none');
         }
-        recheckWarn();
     });
 
     /* ── Leave type → show / hide detail blocks ──────────── */
@@ -291,20 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             blocks.none.classList.remove('d-none');
         }
-
-        // Auto-set Charge To
-        if (t === 'Sick Leave') {
-            selCharge.value = 'Sick Leave';
-        } else {
-            selCharge.value = 'Vacation Leave';
-        }
-        recheckWarn();
     });
 
     /* ── Date change → compute business days ─────────────── */
     dateS.addEventListener('change', recalc);
     dateE.addEventListener('change', recalc);
-    selCharge.addEventListener('change', recheckWarn);
 
     function countBD(s, e) {
         let c = 0, d = new Date(s), end = new Date(e);
@@ -318,21 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
             calcDays.textContent = days;
             wdInput.value = days;
             dayCalc.classList.remove('d-none');
-            recheckWarn();
         } else {
             dayCalc.classList.add('d-none');
         }
     }
-
-    function recheckWarn() {
-        const days = parseFloat(wdInput.value) || 0;
-        const charge = selCharge.value;
-        let avail = charge === 'Sick Leave' ? empSL : empVL;
-        if (charge === 'Leave Without Pay') avail = 9999;
-        calcWarn.classList.toggle('d-none', days <= avail || !selEmp.value);
-    }
-
-    wdInput.addEventListener('input', recheckWarn);
 });
 </script>
 </body>

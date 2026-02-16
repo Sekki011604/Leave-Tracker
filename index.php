@@ -18,10 +18,9 @@ $totalApps  = (int) $conn->query("SELECT COUNT(*) c FROM leave_applications")->f
 $pendingCt  = (int) $conn->query("SELECT COUNT(*) c FROM leave_applications WHERE status='Pending'")->fetch_assoc()['c'];
 
 // On leave today
-$sqlToday = "SELECT la.*, e.employee_name, e.position, d.name AS dept
+$sqlToday = "SELECT la.*, e.employee_name, e.position, e.department
              FROM leave_applications la
              JOIN employees e ON e.id=la.employee_id
-             LEFT JOIN departments d ON d.id=e.department_id
              WHERE ? BETWEEN la.date_start AND la.date_end
                AND la.status IN ('Pending','Approved')
              ORDER BY e.employee_name";
@@ -31,18 +30,11 @@ $stToday->execute();
 $onLeave = $stToday->get_result();
 $onLeaveCt = $onLeave->num_rows;
 
-// Low VL (≤3)
-$lowVL = $conn->query("SELECT employee_name, vacation_leave_balance AS bal FROM employees WHERE vacation_leave_balance<=3 AND status='Active' ORDER BY vacation_leave_balance ASC");
-
-// Low SL (≤3)
-$lowSL = $conn->query("SELECT employee_name, sick_leave_balance AS bal FROM employees WHERE sick_leave_balance<=3 AND status='Active' ORDER BY sick_leave_balance ASC");
-
 // Recent 15 applications
 $recent = $conn->query(
-    "SELECT la.*, e.employee_name, d.name AS dept
+    "SELECT la.*, e.employee_name, e.department
      FROM leave_applications la
      JOIN employees e ON e.id=la.employee_id
-     LEFT JOIN departments d ON d.id=e.department_id
      ORDER BY la.created_at DESC LIMIT 15"
 );
 
@@ -55,16 +47,8 @@ if (isset($_GET['approve'])) {
 }
 if (isset($_GET['disapprove'])) {
     $did = (int)$_GET['disapprove'];
-    // When disapproving, restore previously deducted credits
-    $laRow = $conn->query("SELECT employee_id, charge_to, days_deducted FROM leave_applications WHERE id=$did AND status='Pending'")->fetch_assoc();
-    if ($laRow && $laRow['days_deducted'] > 0) {
-        $col = $laRow['charge_to'] === 'Sick Leave' ? 'sick_leave_balance' : 'vacation_leave_balance';
-        if ($laRow['charge_to'] !== 'Leave Without Pay') {
-            $conn->query("UPDATE employees SET $col = $col + {$laRow['days_deducted']} WHERE id={$laRow['employee_id']}");
-        }
-    }
-    $conn->query("UPDATE leave_applications SET status='Disapproved', days_deducted=0 WHERE id=$did");
-    setFlash('warning','Leave application #'.$did.' disapproved. Credits restored.');
+    $conn->query("UPDATE leave_applications SET status='Disapproved' WHERE id=$did");
+    setFlash('warning','Leave application #'.$did.' disapproved.');
     header('Location: index.php'); exit;
 }
 ?>
@@ -132,7 +116,7 @@ if (isset($_GET['disapprove'])) {
 <div class="row g-4">
 
 <!-- ═══ On Leave Today ═══ -->
-<div class="col-lg-6">
+<div class="col-12">
 <div class="card shadow-sm border-0 h-100">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-x text-warning me-2"></i>On Leave Today</h6>
@@ -146,7 +130,7 @@ if (isset($_GET['disapprove'])) {
         <?php $onLeave->data_seek(0); while($r=$onLeave->fetch_assoc()): ?>
         <tr>
             <td class="fw-semibold"><?=h($r['employee_name'])?></td>
-            <td class="small text-muted"><?=h($r['dept']??'')?></td>
+            <td class="small text-muted"><?=h($r['department']??'')?></td>
             <td><span class="badge bg-<?=leaveTypeBadge($r['leave_type'])?>"><?=h($r['leave_type'])?></span></td>
             <td class="small"><?=date('M d',strtotime($r['date_start']))?> – <?=date('M d',strtotime($r['date_end']))?></td>
         </tr>
@@ -155,46 +139,6 @@ if (isset($_GET['disapprove'])) {
     <?php else: ?>
         <div class="text-center py-5 text-muted"><i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>No one on leave today.</div>
     <?php endif; ?>
-    </div>
-</div>
-</div>
-
-<!-- ═══ Low Credit Alerts ═══ -->
-<div class="col-lg-6">
-<div class="card shadow-sm border-0 h-100">
-    <div class="card-header bg-white">
-        <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Low Credit Alerts (&le; 3 days)</h6>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive"><table class="table table-sm table-hover mb-0">
-        <thead class="table-dark"><tr><th>Employee</th><th class="text-end">VL Balance</th><th class="text-end">SL Balance</th></tr></thead>
-        <tbody>
-        <?php
-        // Merge both lists into one set keyed by name
-        $alerts = [];
-        $lowVL->data_seek(0);
-        while($r=$lowVL->fetch_assoc()) $alerts[$r['employee_name']]['vl'] = $r['bal'];
-        $lowSL->data_seek(0);
-        while($r=$lowSL->fetch_assoc()) $alerts[$r['employee_name']]['sl'] = $r['bal'];
-        if(empty($alerts)): ?>
-            <tr><td colspan="3" class="text-center py-4 text-muted"><i class="bi bi-shield-check text-success me-1"></i>All employees have sufficient credits.</td></tr>
-        <?php else:
-            ksort($alerts);
-            foreach($alerts as $name=>$b):
-                $vl = $b['vl'] ?? null;
-                $sl = $b['sl'] ?? null;
-        ?>
-        <tr>
-            <td class="fw-semibold"><?=h($name)?></td>
-            <td class="text-end <?= $vl!==null && $vl<=3 ? ($vl<=0?'text-danger fw-bold':'text-warning fw-bold') : ''?>">
-                <?= $vl!==null ? number_format($vl,3) : '—' ?>
-            </td>
-            <td class="text-end <?= $sl!==null && $sl<=3 ? ($sl<=0?'text-danger fw-bold':'text-warning fw-bold') : ''?>">
-                <?= $sl!==null ? number_format($sl,3) : '—' ?>
-            </td>
-        </tr>
-        <?php endforeach; endif; ?>
-        </tbody></table></div>
     </div>
 </div>
 </div>
@@ -210,11 +154,11 @@ if (isset($_GET['disapprove'])) {
 <div class="table-responsive"><table class="table table-sm table-hover table-striped mb-0">
 <thead class="table-dark"><tr>
     <th>#</th><th>Employee</th><th>Leave Type</th><th>Dates</th><th class="text-center">Days</th>
-    <th>Charged To</th><th class="text-center">Status</th><th class="text-center">Actions</th>
+    <th class="text-center">Status</th><th class="text-center">Actions</th>
 </tr></thead>
 <tbody>
 <?php if($recent->num_rows===0): ?>
-    <tr><td colspan="8" class="text-center py-4 text-muted">No leave applications yet. <a href="encode_leave.php">Encode the first one.</a></td></tr>
+    <tr><td colspan="7" class="text-center py-4 text-muted">No leave applications yet. <a href="encode_leave.php">Encode the first one.</a></td></tr>
 <?php else: $n=1; while($r=$recent->fetch_assoc()): ?>
     <tr>
         <td class="text-muted"><?=$n++?></td>
@@ -222,14 +166,13 @@ if (isset($_GET['disapprove'])) {
         <td><span class="badge bg-<?=leaveTypeBadge($r['leave_type'])?>"><?=h($r['leave_type'])?></span></td>
         <td class="small"><?=date('M d',strtotime($r['date_start']))?> – <?=date('M d, Y',strtotime($r['date_end']))?></td>
         <td class="text-center"><span class="badge bg-dark"><?=$r['working_days']?></span></td>
-        <td class="small"><?=h($r['charge_to'])?></td>
         <td class="text-center"><span class="badge bg-<?=statusBadge($r['status'])?>"><?=h($r['status'])?></span></td>
         <td class="text-center text-nowrap">
             <?php if($r['status']==='Pending'): ?>
                 <a href="index.php?approve=<?=$r['id']?>" class="btn btn-sm btn-outline-success" title="Approve"
                    onclick="return confirm('Approve this leave?')"><i class="bi bi-check-lg"></i></a>
                 <a href="index.php?disapprove=<?=$r['id']?>" class="btn btn-sm btn-outline-danger" title="Disapprove"
-                   onclick="return confirm('Disapprove and restore credits?')"><i class="bi bi-x-lg"></i></a>
+                   onclick="return confirm('Disapprove this leave?')"><i class="bi bi-x-lg"></i></a>
             <?php else: ?>
                 <span class="text-muted small">—</span>
             <?php endif; ?>
