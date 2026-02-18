@@ -52,6 +52,14 @@ foreach ($logs as $l) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="assets/css/style.css" rel="stylesheet">
 <link href="assets/css/custom.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+<style>
+    .select2-container--bootstrap-5 .select2-selection--single { border-color: #dee2e6; min-height: 38px; }
+    .select2-container--bootstrap-5 .select2-selection--single:focus,
+    .select2-container--bootstrap-5.select2-container--open .select2-selection--single { border-color: #228B22; box-shadow: 0 0 0 .25rem rgba(34,139,34,.25); }
+    .select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted { background-color: #228B22; color: #fff; }
+</style>
 </head>
 <body class="bg-light">
 <?php include 'navbar.php'; ?>
@@ -72,8 +80,8 @@ foreach ($logs as $l) {
 <form method="GET" class="row g-2 align-items-end">
     <div class="col-md-6">
         <label class="form-label small fw-semibold mb-1">Select Employee</label>
-        <select name="id" class="form-select" onchange="this.form.submit()">
-            <option value="">— Choose an employee —</option>
+        <select name="id" id="employee_ledger_select" class="form-select" data-placeholder="Search for an employee...">
+            <option value=""></option>
             <?php $allEmps->data_seek(0); while($e=$allEmps->fetch_assoc()): ?>
             <option value="<?=$e['id']?>" <?=$empId==$e['id']?'selected':''?>><?=h(fullName($e))?></option>
             <?php endwhile; ?>
@@ -184,5 +192,21 @@ foreach ($logs as $l) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#employee_ledger_select').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Search for an employee...',
+        allowClear: true,
+        width: '100%'
+    }).on('change', function() {
+        if ($(this).val()) {
+            $(this).closest('form').submit();
+        }
+    });
+});
+</script>
 </body>
 </html>
