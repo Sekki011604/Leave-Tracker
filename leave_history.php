@@ -12,16 +12,19 @@ $fEmp    = $_GET['employee'] ?? '';
 $fType   = $_GET['type'] ?? '';
 $fStatus = $_GET['status'] ?? '';
 $fYear   = $_GET['year'] ?? '';
+$fSearch = trim($_GET['search'] ?? '');
 
-$sql = "SELECT la.*, e.employee_name, e.department
+$sql = "SELECT la.*, e.title, e.first_name, e.middle_name, e.last_name, e.suffix,
+               e.department
         FROM leave_applications la
         JOIN employees e ON e.id=la.employee_id WHERE 1=1";
 $p=[]; $t='';
+if($fSearch!=='') { $like="%$fSearch%"; $sql.=" AND CONCAT_WS(' ',e.title,e.first_name,e.middle_name,e.last_name,e.suffix) LIKE ?"; $p[]=$like; $t.='s'; }
 if($fEmp!=='')   { $sql.=" AND la.employee_id=?"; $p[]=(int)$fEmp; $t.='i'; }
 if($fType!=='')  { $sql.=" AND la.leave_type=?";   $p[]=$fType;     $t.='s'; }
 if($fStatus!=='') { $sql.=" AND la.status=?";       $p[]=$fStatus;   $t.='s'; }
-if($fYear!=='')  { $sql.=" AND YEAR(la.date_start)=?"; $p[]=(int)$fYear; $t.='i'; }
-$sql .= " ORDER BY la.date_start DESC";
+if($fYear!=='')  { $sql.=" AND YEAR(la.start_date)=?"; $p[]=(int)$fYear; $t.='i'; }
+$sql .= " ORDER BY la.start_date DESC";
 $st = $conn->prepare($sql);
 if ($t !== '') {
     // Build a reference array for bind_param (works on all PHP versions)
@@ -34,8 +37,8 @@ if ($t !== '') {
 $st->execute();
 $logs = $st->get_result();
 
-$empList=$conn->query("SELECT id,employee_name FROM employees ORDER BY employee_name");
-$years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications ORDER BY y DESC");
+$empList=$conn->query("SELECT id, title, first_name, middle_name, last_name, suffix FROM employees ORDER BY last_name, first_name");
+$years=$conn->query("SELECT DISTINCT YEAR(start_date) y FROM leave_applications ORDER BY y DESC");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -61,10 +64,11 @@ $years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications 
 <div class="card shadow-sm border-0 mb-3"><div class="card-body py-2">
 <form method="GET" action="leave_history.php" class="row g-2 align-items-end">
     <div class="col-md-3">
-        <label class="form-label small mb-1">Employee</label>
-        <select name="employee" class="form-select form-select-sm"><option value="">All</option>
-        <?php while($e=$empList->fetch_assoc()): ?><option value="<?=$e['id']?>" <?=$fEmp==$e['id']?'selected':''?>><?=h($e['employee_name'])?></option><?php endwhile; ?>
-        </select>
+        <label class="form-label small mb-1">Search Employee</label>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="search" class="form-control" placeholder="Type name..." value="<?=h($fSearch)?>">
+        </div>
     </div>
     <div class="col-md-2">
         <label class="form-label small mb-1">Leave Type</label>
@@ -106,10 +110,10 @@ $years=$conn->query("SELECT DISTINCT YEAR(date_start) y FROM leave_applications 
 <?php else: $n=1; while($r=$logs->fetch_assoc()): ?>
 <tr>
     <td class="text-muted"><?=$n++?></td>
-    <td class="fw-semibold"><?=h($r['employee_name'])?></td>
+    <td class="fw-semibold"><?=h(fullName($r))?></td>
     <td class="small"><?=h($r['department']??'')?></td>
     <td><span class="badge bg-<?=leaveTypeBadge($r['leave_type'])?>"><?=h($r['leave_type'])?></span></td>
-    <td class="small text-nowrap"><?=date('M d',strtotime($r['date_start']))?> – <?=date('M d, Y',strtotime($r['date_end']))?></td>
+    <td class="small text-nowrap"><?=date('M d',strtotime($r['start_date']))?> – <?=date('M d, Y',strtotime($r['end_date']))?></td>
     <td class="text-center"><span class="badge bg-dark"><?=$r['working_days']?></span></td>
     <td class="text-center"><span class="badge bg-<?=statusBadge($r['status'])?>"><?=h($r['status'])?></span></td>
     <td class="small"><?=h($r['commutation'])?></td>

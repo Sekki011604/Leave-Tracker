@@ -18,12 +18,13 @@ $totalApps  = (int) $conn->query("SELECT COUNT(*) c FROM leave_applications")->f
 $pendingCt  = (int) $conn->query("SELECT COUNT(*) c FROM leave_applications WHERE status='Pending'")->fetch_assoc()['c'];
 
 // On leave today
-$sqlToday = "SELECT la.*, e.employee_name, e.position, e.department
+$sqlToday = "SELECT la.*, e.title, e.first_name, e.middle_name, e.last_name, e.suffix,
+                    e.position, e.department
              FROM leave_applications la
              JOIN employees e ON e.id=la.employee_id
-             WHERE ? BETWEEN la.date_start AND la.date_end
+             WHERE ? BETWEEN la.start_date AND la.end_date
                AND la.status IN ('Pending','Approved')
-             ORDER BY e.employee_name";
+             ORDER BY e.last_name, e.first_name";
 $stToday = $conn->prepare($sqlToday);
 $stToday->bind_param('s', $today);
 $stToday->execute();
@@ -32,10 +33,11 @@ $onLeaveCt = $onLeave->num_rows;
 
 // Recent 15 applications
 $recent = $conn->query(
-    "SELECT la.*, e.employee_name, e.department
+    "SELECT la.*, e.title, e.first_name, e.middle_name, e.last_name, e.suffix,
+            e.department
      FROM leave_applications la
      JOIN employees e ON e.id=la.employee_id
-     ORDER BY la.created_at DESC LIMIT 15"
+     ORDER BY la.date_filed DESC LIMIT 15"
 );
 
 /* ── Handle quick Approve / Disapprove from dashboard ──────── */
@@ -129,10 +131,10 @@ if (isset($_GET['disapprove'])) {
         <tbody>
         <?php $onLeave->data_seek(0); while($r=$onLeave->fetch_assoc()): ?>
         <tr>
-            <td class="fw-semibold"><?=h($r['employee_name'])?></td>
+            <td class="fw-semibold"><?=h(fullName($r))?></td>
             <td class="small text-muted"><?=h($r['department']??'')?></td>
             <td><span class="badge bg-<?=leaveTypeBadge($r['leave_type'])?>"><?=h($r['leave_type'])?></span></td>
-            <td class="small"><?=date('M d',strtotime($r['date_start']))?> – <?=date('M d',strtotime($r['date_end']))?></td>
+            <td class="small"><?=date('M d',strtotime($r['start_date']))?> – <?=date('M d',strtotime($r['end_date']))?></td>
         </tr>
         <?php endwhile; ?>
         </tbody></table></div>
@@ -162,9 +164,9 @@ if (isset($_GET['disapprove'])) {
 <?php else: $n=1; while($r=$recent->fetch_assoc()): ?>
     <tr>
         <td class="text-muted"><?=$n++?></td>
-        <td class="fw-semibold"><?=h($r['employee_name'])?></td>
+        <td class="fw-semibold"><?=h(fullName($r))?></td>
         <td><span class="badge bg-<?=leaveTypeBadge($r['leave_type'])?>"><?=h($r['leave_type'])?></span></td>
-        <td class="small"><?=date('M d',strtotime($r['date_start']))?> – <?=date('M d, Y',strtotime($r['date_end']))?></td>
+        <td class="small"><?=date('M d',strtotime($r['start_date']))?> – <?=date('M d, Y',strtotime($r['end_date']))?></td>
         <td class="text-center"><span class="badge bg-dark"><?=$r['working_days']?></span></td>
         <td class="text-center"><span class="badge bg-<?=statusBadge($r['status'])?>"><?=h($r['status'])?></span></td>
         <td class="text-center text-nowrap">

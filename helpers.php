@@ -5,6 +5,18 @@
  * ============================================================
  */
 
+/* ── Build display name from split columns ─────────────────── */
+function fullName(array $row): string
+{
+    return trim(implode(' ', array_filter([
+        $row['title'] ?? '',
+        $row['first_name'] ?? '',
+        $row['middle_name'] ?? '',
+        $row['last_name'] ?? '',
+        $row['suffix'] ?? '',
+    ])));
+}
+
 /* ── All CS Form 6 Leave Types ────────────────────────────── */
 function leaveTypes(): array
 {

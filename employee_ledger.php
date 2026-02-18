@@ -13,7 +13,7 @@ require_once 'helpers.php';
 $empId = (int)($_GET['id'] ?? 0);
 
 // All employees for selector
-$allEmps = $conn->query("SELECT id, employee_name FROM employees ORDER BY employee_name");
+$allEmps = $conn->query("SELECT id, title, first_name, middle_name, last_name, suffix FROM employees ORDER BY last_name, first_name");
 
 $employee = null;
 $logs     = [];
@@ -26,7 +26,7 @@ if ($empId > 0) {
 
     if ($employee) {
         $lg = $conn->prepare(
-            "SELECT * FROM leave_applications WHERE employee_id=? ORDER BY date_start ASC"
+            "SELECT * FROM leave_applications WHERE employee_id=? ORDER BY start_date ASC"
         );
         $lg->bind_param('i', $empId);
         $lg->execute();
@@ -75,7 +75,7 @@ foreach ($logs as $l) {
         <select name="id" class="form-select" onchange="this.form.submit()">
             <option value="">— Choose an employee —</option>
             <?php $allEmps->data_seek(0); while($e=$allEmps->fetch_assoc()): ?>
-            <option value="<?=$e['id']?>" <?=$empId==$e['id']?'selected':''?>><?=h($e['employee_name'])?></option>
+            <option value="<?=$e['id']?>" <?=$empId==$e['id']?'selected':''?>><?=h(fullName($e))?></option>
             <?php endwhile; ?>
         </select>
     </div>
@@ -92,7 +92,7 @@ foreach ($logs as $l) {
                 <div class="d-flex align-items-start gap-3">
                     <div class="avatar-circle flex-shrink-0"><i class="bi bi-person-fill fs-2"></i></div>
                     <div class="flex-grow-1">
-                        <h5 class="fw-bold mb-1"><?=h($employee['employee_name'])?></h5>
+                        <h5 class="fw-bold mb-1"><?=h(fullName($employee))?></h5>
                         <table class="table table-sm table-borderless mb-0 small">
                             <tr><td class="text-muted" style="width:100px">Position</td><td class="fw-semibold"><?=h($employee['position']??'—')?></td></tr>
                             <tr><td class="text-muted">Department</td><td class="fw-semibold"><?=h($employee['department']??'—')?></td></tr>
@@ -162,7 +162,7 @@ foreach ($logs as $l) {
 <?php else: $n=1; foreach($logs as $l): ?>
     <tr>
         <td class="text-center text-muted"><?=$n++?></td>
-        <td class="small text-nowrap"><?=date('M d',strtotime($l['date_start']))?> – <?=date('M d, Y',strtotime($l['date_end']))?></td>
+        <td class="small text-nowrap"><?=date('M d',strtotime($l['start_date']))?> – <?=date('M d, Y',strtotime($l['end_date']))?></td>
         <td><span class="badge bg-<?=leaveTypeBadge($l['leave_type'])?>"><?=h($l['leave_type'])?></span></td>
         <td class="text-center"><span class="badge bg-dark"><?=$l['working_days']?></span></td>
         <td class="text-center"><span class="badge bg-<?=statusBadge($l['status'])?>"><?=h($l['status'])?></span></td>

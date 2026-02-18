@@ -17,10 +17,11 @@ require_once 'helpers.php';
 
 // Active employees for dropdown
 $employees = $conn->query(
-    "SELECT e.id, e.employee_name, e.position, e.department
+    "SELECT e.id, e.title, e.first_name, e.middle_name, e.last_name, e.suffix,
+            e.position, e.department
      FROM employees e
      WHERE e.status='Active'
-     ORDER BY e.employee_name"
+     ORDER BY e.last_name, e.first_name"
 );
 ?>
 <!DOCTYPE html>
@@ -61,7 +62,7 @@ $employees = $conn->query(
                 <?php while($e=$employees->fetch_assoc()): ?>
                 <option value="<?=$e['id']?>"
                         data-pos="<?=h($e['position']??'')?>"
-                        data-dept="<?=h($e['department']??'')?>"><?=h($e['employee_name'])?></option>
+                        data-dept="<?=h($e['department']??'')?>"><?=h(fullName($e))?></option>
                 <?php endwhile; ?>
             </select>
         </div>
@@ -199,6 +200,17 @@ $employees = $conn->query(
             <label class="form-label small fw-semibold">Remarks <span class="text-muted fw-normal">(Optional)</span></label>
             <textarea name="remarks" class="form-control" rows="2" placeholder="Additional notes..."></textarea>
         </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CARD 4 — Encoder / Audit Trail
+     ═══════════════════════════════════════════════════════════ -->
+<div class="card shadow-sm border-0 mb-4 border-start border-4 border-warning">
+    <div class="card-body py-3">
+        <label class="form-label fw-semibold"><i class="bi bi-person-badge me-1 text-warning"></i>Encoded By / Recorded By <span class="text-danger">*</span></label>
+        <input type="text" name="encoded_by" class="form-control" placeholder="Enter Name (e.g., Juan Dela Cruz)" required>
+        <div class="form-text">Your full name — this will be permanently saved as the encoder of this record.</div>
     </div>
 </div>
 

@@ -35,7 +35,8 @@ if (isset($_GET['delete'])) {
 
 /* ── Fetch the record ──────────────────────────────────────── */
 $st = $conn->prepare(
-    "SELECT la.*, e.employee_name, e.position, e.department
+    "SELECT la.*, e.title, e.first_name, e.middle_name, e.last_name, e.suffix,
+            e.position, e.department
      FROM leave_applications la
      JOIN employees e ON e.id=la.employee_id
      WHERE la.id=?"
@@ -77,14 +78,14 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 <div class="row mb-4 pb-3 border-bottom">
     <div class="col-md-6">
         <table class="table table-sm table-borderless mb-0 small">
-            <tr><td class="text-muted" style="width:120px">Employee</td><td class="fw-bold"><?=h($la['employee_name'])?></td></tr>
+            <tr><td class="text-muted" style="width:120px">Employee</td><td class="fw-bold"><?=h(fullName($la))?></td></tr>
             <tr><td class="text-muted">Position</td><td><?=h($la['position']??'—')?></td></tr>
             <tr><td class="text-muted">Department</td><td><?=h($la['department']??'\u2014')?></td></tr>
         </table>
     </div>
     <div class="col-md-6 text-md-end">
         <div class="mb-2"><span class="badge bg-<?=statusBadge($la['status'])?> fs-6"><?=h($la['status'])?></span></div>
-        <div class="small text-muted">Recorded: <?=date('M d, Y h:i A',strtotime($la['created_at']))?></div>
+        <div class="small text-muted">Filed: <?=date('M d, Y',strtotime($la['date_filed']))?></div>
         <div class="small text-muted">By: <?=h($la['recorded_by']??'—')?></div>
     </div>
 </div>
@@ -99,11 +100,11 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 <!-- §6-B  Details -->
 <h6 class="fw-bold text-primary mb-2"><i class="bi bi-card-text me-1"></i>Specific Details</h6>
 <div class="mb-3 ms-3 small">
-    <?php if($la['vacation_detail']): ?>
-        <p class="mb-1"><strong>Location:</strong> <?=h($la['vacation_detail'])?> <?=$la['vacation_location']?'— '.h($la['vacation_location']):''?></p>
+    <?php if($la['vacation_location']): ?>
+        <p class="mb-1"><strong>Vacation Location:</strong> <?=h($la['vacation_location'])?></p>
     <?php endif; ?>
-    <?php if($la['sick_detail']): ?>
-        <p class="mb-1"><strong>Illness:</strong> <?=h($la['sick_detail'])?> <?=$la['sick_illness']?'— '.h($la['sick_illness']):''?></p>
+    <?php if($la['sick_location']): ?>
+        <p class="mb-1"><strong>Sick Leave:</strong> <?=h($la['sick_location'])?> <?=$la['sick_illness']?'— '.h($la['sick_illness']):''?></p>
     <?php endif; ?>
     <?php if($la['study_detail']): ?>
         <p class="mb-1"><strong>Study:</strong> <?=h($la['study_detail'])?></p>
@@ -111,7 +112,10 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
     <?php if($la['other_detail']): ?>
         <p class="mb-1"><strong>Details:</strong> <?=h($la['other_detail'])?></p>
     <?php endif; ?>
-    <?php if(!$la['vacation_detail'] && !$la['sick_detail'] && !$la['study_detail'] && !$la['other_detail']): ?>
+    <?php if($la['women_special_detail']): ?>
+        <p class="mb-1"><strong>Women Special:</strong> <?=h($la['women_special_detail'])?></p>
+    <?php endif; ?>
+    <?php if(!$la['vacation_location'] && !$la['sick_location'] && !$la['study_detail'] && !$la['other_detail'] && !$la['women_special_detail']): ?>
         <span class="text-muted">No additional details.</span>
     <?php endif; ?>
 </div>
@@ -120,8 +124,8 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
 <h6 class="fw-bold text-primary mb-2"><i class="bi bi-calendar-range me-1"></i>Duration</h6>
 <div class="mb-3 ms-3">
     <div class="row g-3">
-        <div class="col-auto"><div class="border rounded p-2 small"><span class="text-muted d-block">Start</span><strong><?=date('F d, Y',strtotime($la['date_start']))?></strong></div></div>
-        <div class="col-auto"><div class="border rounded p-2 small"><span class="text-muted d-block">End</span><strong><?=date('F d, Y',strtotime($la['date_end']))?></strong></div></div>
+        <div class="col-auto"><div class="border rounded p-2 small"><span class="text-muted d-block">Start</span><strong><?=date('F d, Y',strtotime($la['start_date']))?></strong></div></div>
+        <div class="col-auto"><div class="border rounded p-2 small"><span class="text-muted d-block">End</span><strong><?=date('F d, Y',strtotime($la['end_date']))?></strong></div></div>
         <div class="col-auto"><div class="border rounded p-2 small text-center"><span class="text-muted d-block">Working Days</span><strong class="fs-5"><?=$la['working_days']?></strong></div></div>
     </div>
 </div>
@@ -138,10 +142,19 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
     </table>
 </div>
 
-<?php if($la['remarks']): ?>
-<h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-left-text me-1"></i>Remarks</h6>
-<div class="mb-3 ms-3 small"><?=nl2br(h($la['remarks']))?></div>
+<?php if($la['disapproval_reason']): ?>
+<h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-left-text me-1"></i>Disapproval Reason</h6>
+<div class="mb-3 ms-3 small"><?=nl2br(h($la['disapproval_reason']))?></div>
 <?php endif; ?>
+
+<!-- Encoder Audit Trail -->
+<div class="border-top pt-3 mt-3">
+    <p class="mb-0 small text-muted">
+        <i class="bi bi-person-badge me-1"></i>
+        <strong>Recorded by:</strong> <?=h($la['encoded_by'] ?? '—')?>
+        on <?=date('F d, Y', strtotime($la['date_filed']))?>
+    </p>
+</div>
 
 </div><!-- /card-body -->
 

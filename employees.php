@@ -47,20 +47,14 @@ if (isset($_GET['edit'])) {
 
 /* ── Add / Update POST ─────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action   = $_POST['action'] ?? 'add';
+    $action     = $_POST['action'] ?? 'add';
+    $title      = trim($_POST['title']       ?? '');
     $firstName  = trim($_POST['first_name']  ?? '');
     $middleName = trim($_POST['middle_name'] ?? '');
     $lastName   = trim($_POST['last_name']   ?? '');
-
-    // Concatenate into government format: "Last Name, First Name Middle Name"
-    if ($middleName !== '') {
-        $name = $lastName . ', ' . $firstName . ' ' . $middleName;
-    } else {
-        $name = $lastName . ', ' . $firstName;
-    }
-
-    $pos      = trim($_POST['position'] ?? '');
-    $dept     = trim($_POST['department'] ?? '');
+    $suffix     = trim($_POST['suffix']      ?? '');
+    $pos        = trim($_POST['position']    ?? '');
+    $dept       = trim($_POST['department']  ?? '');
 
     if ($firstName === '' || $lastName === '') {
         $error = 'First Name and Last Name are required.';
@@ -71,54 +65,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if ($action === 'update') {
             $uid = (int)$_POST['id'];
-            $st = $conn->prepare("UPDATE employees SET employee_name=?, position=?, department=? WHERE id=?");
-            $st->bind_param('sssi', $name, $pos, $dept, $uid);
+            $st = $conn->prepare("UPDATE employees SET title=?, first_name=?, middle_name=?, last_name=?, suffix=?, position=?, department=? WHERE id=?");
+            $st->bind_param('sssssssi', $title, $firstName, $middleName, $lastName, $suffix, $pos, $dept, $uid);
             if ($st->execute()) { setFlash('success','Employee updated.'); header('Location: employees.php'); exit; }
             $error = 'Update failed.';
         } else {
-            $st = $conn->prepare("INSERT INTO employees (employee_name, position, department) VALUES (?,?,?)");
-            $st->bind_param('sss', $name, $pos, $dept);
+            $st = $conn->prepare("INSERT INTO employees (title, first_name, middle_name, last_name, suffix, position, department) VALUES (?,?,?,?,?,?,?)");
+            $st->bind_param('sssssss', $title, $firstName, $middleName, $lastName, $suffix, $pos, $dept);
             if ($st->execute()) { setFlash('success','Employee added.'); header('Location: employees.php'); exit; }
             $error = 'Insert failed: ' . $conn->error;
         }
     }
     if ($error && $action === 'update') {
         $editMode = true;
-        $editData = ['id' => $_POST['id'], 'employee_name' => $name,
-                     '_first' => $firstName, '_middle' => $middleName, '_last' => $lastName,
+        $editData = ['id' => $_POST['id'],
+                     'title' => $title, 'first_name' => $firstName, 'middle_name' => $middleName,
+                     'last_name' => $lastName, 'suffix' => $suffix,
                      'position' => $pos, 'department' => $dept];
     }
-}
-
-/*
- * Helper: parse "Last, First M." back into parts (for edit mode).
- * Returns [first, middle, last].
- */
-function parseEmployeeName(?string $full): array {
-    if (!$full) return ['', '', ''];
-    // Expected: "LastName, FirstName M." or "LastName, FirstName"
-    if (strpos($full, ',') !== false) {
-        [$last, $rest] = array_map('trim', explode(',', $full, 2));
-        $parts = preg_split('/\s+/', $rest);
-        $first = $parts[0] ?? '';
-        $mid   = isset($parts[1]) ? rtrim($parts[1], '.') : '';
-        return [$first, $mid, $last];
-    }
-    // Fallback: space-separated
-    $parts = preg_split('/\s+/', $full);
-    if (count($parts) >= 3) return [$parts[0], $parts[1], $parts[2]];
-    if (count($parts) === 2) return [$parts[0], '', $parts[1]];
-    return [$full, '', ''];
 }
 
 /* ── Fetch employees ───────────────────────────────────────── */
 $search = trim($_GET['q'] ?? '');
 $fStatus = $_GET['status'] ?? '';
+$sort    = $_GET['sort'] ?? 'last';
 $sql = "SELECT * FROM employees e WHERE 1=1";
 $p = []; $t = '';
-if ($search !== '') { $like="%$search%"; $sql .= " AND (e.employee_name LIKE ? OR e.position LIKE ?)"; $p[]=$like; $p[]=$like; $t .= 'ss'; }
+if ($search !== '') { $like="%$search%"; $sql .= " AND (CONCAT_WS(' ',e.title,e.first_name,e.middle_name,e.last_name,e.suffix) LIKE ? OR e.position LIKE ?)"; $p[]=$like; $p[]=$like; $t .= 'ss'; }
 if ($fStatus !== '') { $sql .= " AND e.status=?"; $p[]=$fStatus; $t .= 's'; }
-$sql .= " ORDER BY e.employee_name";
+$sql .= ($sort === 'first') ? " ORDER BY e.first_name ASC, e.last_name ASC" : " ORDER BY e.last_name ASC, e.first_name ASC";
 $st = $conn->prepare($sql);
 if ($t !== '') $st->bind_param($t, ...$p);
 $st->execute();
@@ -155,7 +130,11 @@ $emps = $st->get_result();
         <option value="Active" <?=$fStatus==='Active'?'selected':''?>>Active</option>
         <option value="Inactive" <?=$fStatus==='Inactive'?'selected':''?>>Inactive</option></select></div>
     <div class="col-md-4"><button class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-funnel me-1"></i>Filter</button>
-        <a href="employees.php" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-circle"></i></a></div>
+        <a href="employees.php" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-circle"></i></a>
+        <span class="ms-2 border-start ps-2">
+            <a href="employees.php?sort=last<?=$search?'&q='.urlencode($search):''?><?=$fStatus?'&status='.urlencode($fStatus):''?>" class="btn btn-sm <?=$sort!=='first'?'btn-primary':'btn-outline-primary'?> me-1" title="Sort by Last Name"><i class="bi bi-sort-alpha-down me-1"></i>Last Name</a>
+            <a href="employees.php?sort=first<?=$search?'&q='.urlencode($search):''?><?=$fStatus?'&status='.urlencode($fStatus):''?>" class="btn btn-sm <?=$sort==='first'?'btn-primary':'btn-outline-primary'?>" title="Sort by First Name"><i class="bi bi-sort-alpha-down me-1"></i>First Name</a>
+        </span></div>
 </form></div></div>
 
 <!-- Table -->
@@ -171,7 +150,7 @@ $emps = $st->get_result();
 <?php else: $n=1; while($r=$emps->fetch_assoc()): ?>
 <tr>
     <td class="text-muted"><?=$n++?></td>
-    <td class="fw-semibold"><?=h($r['employee_name'])?></td>
+    <td class="fw-semibold"><?=h(fullName($r))?></td>
     <td class="small"><?=h($r['position']??'—')?></td>
     <td class="small"><?=h($r['department']??'—')?></td>
 
@@ -205,34 +184,46 @@ $emps = $st->get_result();
     <?php if($error): ?><div class="alert alert-danger py-2 small"><?=h($error)?></div><?php endif; ?>
 
     <?php
-        // Resolve name parts for the form
-        if ($editMode && isset($editData['_first'])) {
-            // Came from a failed POST — parts already available
-            $_fn = $editData['_first']; $_mn = $editData['_middle']; $_ln = $editData['_last'];
-        } elseif ($editMode) {
-            // Loaded from DB — parse the stored full name
-            [$_fn, $_mn, $_ln] = parseEmployeeName($editData['employee_name'] ?? '');
+        // Resolve field values (directly from DB columns or POST)
+        if ($editMode) {
+            $_tt = $editData['title']       ?? '';
+            $_fn = $editData['first_name']  ?? '';
+            $_mn = $editData['middle_name'] ?? '';
+            $_ln = $editData['last_name']   ?? '';
+            $_sx = $editData['suffix']      ?? '';
         } else {
+            $_tt = $_POST['title']       ?? '';
             $_fn = $_POST['first_name']  ?? '';
             $_mn = $_POST['middle_name'] ?? '';
             $_ln = $_POST['last_name']   ?? '';
+            $_sx = $_POST['suffix']      ?? '';
         }
     ?>
     <div class="row g-3">
-        <div class="col-md-4">
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold">Title</label>
+            <input type="text" name="title" class="form-control"
+                   value="<?=h($_tt)?>" placeholder="e.g. Dr.">
+        </div>
+        <div class="col-md-5">
             <label class="form-label small fw-semibold">First Name <span class="text-danger">*</span></label>
             <input type="text" name="first_name" class="form-control" required
                    value="<?=h($_fn)?>" placeholder="Juan">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-5">
             <label class="form-label small fw-semibold">Middle Name</label>
             <input type="text" name="middle_name" class="form-control"
                    value="<?=h($_mn)?>" placeholder="Andres">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-8">
             <label class="form-label small fw-semibold">Last Name <span class="text-danger">*</span></label>
             <input type="text" name="last_name" class="form-control" required
                    value="<?=h($_ln)?>" placeholder="Dela Cruz">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Suffix</label>
+            <input type="text" name="suffix" class="form-control"
+                   value="<?=h($_sx)?>" placeholder="e.g. Jr., III">
         </div>
         <div class="col-md-6">
             <label class="form-label small fw-semibold">Position / Designation <span class="text-danger">*</span></label>
