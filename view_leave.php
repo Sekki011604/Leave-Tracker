@@ -153,7 +153,6 @@ if (!$la) { setFlash('danger','Record not found.'); header('Location: leave_hist
         <a href="view_leave.php?id=<?=$id?>&action=disapprove" class="btn btn-danger" onclick="return confirm('Disapprove this leave?')">
             <i class="bi bi-x-circle me-1"></i>Disapprove</a>
     <?php endif; ?>
-    <a href="employee_ledger.php?id=<?=$la['employee_id']?>" class="btn btn-outline-info"><i class="bi bi-journal-bookmark me-1"></i>View Ledger</a>
     <a href="view_leave.php?id=<?=$id?>&delete=1" class="btn btn-outline-danger ms-auto" onclick="return confirm('Delete this record permanently?')">
         <i class="bi bi-trash me-1"></i>Delete</a>
 </div>
